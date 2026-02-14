@@ -1,0 +1,38 @@
+# Datos personales (tu tracking de BTC)
+data/btc_purchases.csv
+
+# Logs de ejecución
+logs/
+*.log
+
+# Archivos temporales y backups
+scripts/*.backup
+scripts/*_new.py
+scripts/dashboard_template.py
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Entornos virtuales
+venv/
+env/
+ENV/
