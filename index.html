@@ -304,44 +304,44 @@
         <!-- Header -->
         <div class="header">
             <h1>₿ Bitcoin DCA Tracker</h1>
-            <p>Última actualización: 14/02/2026 14:39:29</p>
+            <p>Última actualización: 14/02/2026 17:56:04</p>
         </div>
 
         <!-- Métricas Clave (ahora con 5 tarjetas) -->
         <div class="metrics-grid">
             <div class="metric-card">
                 <div class="metric-label">💵 Total Invertido</div>
-                <div class="metric-value">$2.00</div>
-                <div class="metric-subtitle">1 día × $2 USD</div>
+                <div class="metric-value">$4.00</div>
+                <div class="metric-subtitle">2 días × $2 USD</div>
             </div>
 
             <div class="metric-card">
                 <div class="metric-label">₿ BTC Acumulado</div>
-                <div class="metric-value">0.00002866</div>
-                <div class="metric-subtitle">Satoshis: 2,865</div>
+                <div class="metric-value">0.00005736</div>
+                <div class="metric-subtitle">Satoshis: 5,735</div>
             </div>
 
             <div class="metric-card">
                 <div class="metric-label">📈 Valor Actual</div>
                 <div class="metric-value">
-                    $2.00
-                    <span class="trend-indicator">→</span>
+                    $4.00
+                    <span class="trend-indicator">↗️</span>
                 </div>
-                <div class="metric-subtitle">BTC @ $69,784.00 →</div>
+                <div class="metric-subtitle">BTC @ $69,694.00 ↘️</div>
             </div>
 
             <div class="metric-card">
-                <div class="metric-label">📈 Ganancia/Pérdida</div>
-                <div class="metric-value" style="color: #10b981">+$0.00</div>
-                <div class="metric-subtitle" style="color: #10b981">+0.00%</div>
+                <div class="metric-label">📉 Ganancia/Pérdida</div>
+                <div class="metric-value" style="color: #ef4444">$-0.00</div>
+                <div class="metric-subtitle" style="color: #ef4444">-0.06%</div>
             </div>
 
             <!-- MEJORA 1: Nueva métrica - Precio Promedio de Compra -->
             <div class="metric-card">
                 <div class="metric-label">📊 Precio Promedio</div>
-                <div class="metric-value">$69,784.00</div>
+                <div class="metric-value">$69,738.97</div>
                 <div class="metric-subtitle">
-                    +0.0% vs actual
+                    -0.1% vs actual
                 </div>
             </div>
         </div>
@@ -368,8 +368,8 @@
             <div class="stats-grid">
                 <div class="stat-item">
                     <div class="stat-item-label">🏆 Mejor Día de Compra</div>
-                    <div class="stat-item-value">$69,784.00</div>
-                    <div class="stat-item-detail">2026-02-14 00:00:00 · Compraste 0.00002866 BTC</div>
+                    <div class="stat-item-value">$69,694.00</div>
+                    <div class="stat-item-detail">2026-02-14 · Compraste 0.00002870 BTC</div>
                 </div>
 
                 <div class="stat-item">
@@ -380,7 +380,7 @@
 
                 <div class="stat-item">
                     <div class="stat-item-label">🔥 Racha Consecutiva</div>
-                    <div class="stat-item-value">1 día</div>
+                    <div class="stat-item-value">2 días</div>
                     <div class="stat-item-detail">Sin interrupciones</div>
                 </div>
             </div>
@@ -426,10 +426,10 @@
         }
 
         // Datos desde Python
-        const labels = ['14 feb.'];
-        const dataInvertido = [2.0];
-        const dataValorBTC = [2.0];
-        const dataPrecioBTC = [69784];
+        const labels = ['14 Feb', '14 Feb'];
+        const dataInvertido = [2.0, 4.0];
+        const dataValorBTC = [2.0, 3.9974206121747105];
+        const dataPrecioBTC = [69784, 69694];
 
         // Configuración de colores según tema
         function getChartColors() {
