@@ -1,0 +1,77 @@
+name: Daily BTC DCA Update
+
+on:
+  # Se ejecuta todos los días a las 12:00 UTC (9:00 AM Argentina UTC-3)
+  schedule:
+    - cron: '0 12 * * *'
+
+  # También permite ejecutar manualmente desde GitHub
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update-dashboard:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout del repositorio
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      # 2. Configurar Python
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      # 3. Instalar dependencias
+      - name: Install dependencies
+        run: |
+          pip install pandas requests
+
+      # 4. Ejecutar el script de actualización
+      - name: Update BTC DCA data
+        run: |
+          cd ${{ github.workspace }}
+          python scripts/daily_update.py
+
+      # 5. Copiar dashboard a index.html para GitHub Pages
+      - name: Update index.html
+        run: |
+          cp dashboard.html index.html
+
+      # 6. Verificar si hay cambios
+      - name: Check for changes
+        id: git-check
+        run: |
+          git diff --exit-code || echo "changes=true" >> $GITHUB_OUTPUT
+
+      # 7. Commit y push si hay cambios
+      - name: Commit and push changes
+        if: steps.git-check.outputs.changes == 'true'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add data/btc_purchases.csv dashboard.html index.html logs/
+          git commit -m "🤖 Auto-update: $(date +'%Y-%m-%d %H:%M UTC')"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # 8. Mensaje de éxito
+      - name: Success message
+        if: steps.git-check.outputs.changes == 'true'
+        run: |
+          echo "✅ Dashboard actualizado exitosamente"
+          echo "📊 Nuevo precio BTC registrado"
+          echo "🌐 GitHub Pages se actualizará en ~2 minutos"
+
+      - name: No changes message
+        if: steps.git-check.outputs.changes != 'true'
+        run: |
+          echo "ℹ️ No hay cambios para commitear (ya se ejecutó hoy)"
