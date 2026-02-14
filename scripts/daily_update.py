@@ -81,7 +81,23 @@ def update_btc_data():
 
         # Paso 3: Leer datos históricos (si existen)
         if CSV_FILE.exists():
-            df = pd.read_csv(CSV_FILE, parse_dates=['fecha'])
+            df = pd.read_csv(CSV_FILE)
+            # Normalizar fechas a solo fecha (sin hora) para comparaciones - usar format='mixed' para manejar formatos inconsistentes
+            df['fecha'] = pd.to_datetime(df['fecha'], format='mixed').dt.date
+
+            # Contar duplicados antes de limpiar
+            duplicados_antes = len(df)
+
+            # Eliminar duplicados si existen (mantener solo el primero de cada día)
+            df = df.drop_duplicates(subset=['fecha'], keep='first')
+
+            duplicados_despues = len(df)
+            if duplicados_antes > duplicados_despues:
+                log_message(f"⚠ Se encontraron {duplicados_antes - duplicados_despues} registro(s) duplicado(s) - limpiando...")
+                # Guardar CSV limpio
+                df.to_csv(CSV_FILE, index=False)
+                log_message(f"✓ CSV limpio guardado")
+
             btc_acumulado_previo = df['btc_acumulado'].iloc[-1]
             log_message(f"BTC acumulado previo: {btc_acumulado_previo:.8f}")
         else:
@@ -89,12 +105,22 @@ def update_btc_data():
             btc_acumulado_previo = 0.0
             log_message("Primera ejecución - creando archivo CSV")
 
-        # Paso 4: Calcular nuevos acumulados
+        # Paso 4: Verificar si ya existe un registro para hoy
+        fecha_hoy = datetime.now().date()
+
+        if not df.empty and fecha_hoy in df['fecha'].values:
+            log_message(f"⚠ Ya existe un registro para {fecha_hoy} - regenerando solo el dashboard")
+            # Regenerar dashboard con datos existentes
+            generate_dashboard(df)
+            log_message("✓ Dashboard actualizado (sin agregar nueva compra)")
+            log_message("=" * 60)
+            return
+
+        # Paso 5: Calcular nuevos acumulados
         btc_acumulado = btc_acumulado_previo + btc_comprados
         valor_actual_usd = btc_acumulado * precio_btc
 
-        # Paso 5: Crear registro del día
-        fecha_hoy = datetime.now().date()
+        # Paso 6: Crear registro del día
         nuevo_registro = {
             'fecha': fecha_hoy,
             'precio_btc_usd': precio_btc,
@@ -104,17 +130,12 @@ def update_btc_data():
             'valor_actual_usd': valor_actual_usd
         }
 
-        # Verificar si ya existe un registro para hoy
-        if not df.empty and fecha_hoy in df['fecha'].values:
-            log_message(f"⚠ Ya existe un registro para {fecha_hoy} - omitiendo actualización")
-            return
-
-        # Paso 6: Guardar en CSV
+        # Paso 7: Guardar en CSV
         df = pd.concat([df, pd.DataFrame([nuevo_registro])], ignore_index=True)
         df.to_csv(CSV_FILE, index=False)
         log_message(f"✓ Datos guardados en {CSV_FILE}")
 
-        # Paso 7: Regenerar dashboard HTML
+        # Paso 8: Regenerar dashboard HTML
         generate_dashboard(df)
 
         log_message("✓ Actualización completada exitosamente")
@@ -172,6 +193,20 @@ def generate_dashboard(df):
     peor_dia_precio = df.loc[peor_dia_idx, 'precio_btc_usd']
 
     racha_dias = total_dias
+
+    # Formatear racha en meses/años
+    if racha_dias < 30:
+        racha_formato = f"{racha_dias} día{'s' if racha_dias != 1 else ''}"
+    elif racha_dias < 365:
+        meses = racha_dias // 30
+        racha_formato = f"{meses} mes{'es' if meses != 1 else ''}"
+    else:
+        años = racha_dias // 365
+        meses_restantes = (racha_dias % 365) // 30
+        if meses_restantes > 0:
+            racha_formato = f"{años} año{'s' if años != 1 else ''} y {meses_restantes} mes{'es' if meses_restantes != 1 else ''}"
+        else:
+            racha_formato = f"{años} año{'s' if años != 1 else ''}"
 
     # Colores
     color_ganancia = "#10b981" if ganancia >= 0 else "#ef4444"
@@ -358,6 +393,9 @@ def generate_dashboard(df):
         .metric-card:nth-child(3) {{ animation-delay: 0.2s; }}
         .metric-card:nth-child(4) {{ animation-delay: 0.25s; }}
         .metric-card:nth-child(5) {{ animation-delay: 0.3s; }}
+        .metric-card:nth-child(6) {{ animation-delay: 0.35s; }}
+        .metric-card:nth-child(7) {{ animation-delay: 0.4s; }}
+        .metric-card:nth-child(8) {{ animation-delay: 0.45s; }}
 
         .metric-card::before {{
             content: '';
@@ -400,15 +438,21 @@ def generate_dashboard(df):
             gap: 10px;
         }}
 
-        .trend-indicator {{
-            font-size: 0.6em;
-            animation: pulse 2s ease-in-out infinite;
-        }}
-
         .metric-subtitle {{
             font-size: 0.9em;
             color: var(--text-tertiary);
             font-weight: 400;
+        }}
+
+        /* Títulos de secciones */
+        .section-title {{
+            color: white;
+            font-size: 1.8em;
+            font-weight: 600;
+            margin: 40px 0 20px 0;
+            text-align: left;
+            opacity: 0.95;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
         }}
 
         /* Secciones de información */
@@ -430,40 +474,6 @@ def generate_dashboard(df):
             font-size: 1.5em;
         }}
 
-        /* MEJORA 4: Sección de estadísticas */
-        .stats-grid {{
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin-top: 20px;
-        }}
-
-        .stat-item {{
-            padding: 20px;
-            background: var(--bg-gradient-start);
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
-            border-radius: 12px;
-            border: 1px solid var(--card-border);
-        }}
-
-        .stat-item-label {{
-            font-size: 0.85em;
-            color: var(--text-secondary);
-            margin-bottom: 8px;
-            font-weight: 500;
-        }}
-
-        .stat-item-value {{
-            font-size: 1.3em;
-            font-weight: 600;
-            color: var(--text-primary);
-        }}
-
-        .stat-item-detail {{
-            font-size: 0.8em;
-            color: var(--text-tertiary);
-            margin-top: 4px;
-        }}
 
         /* Gráficos */
         .chart-container {{
@@ -504,10 +514,10 @@ def generate_dashboard(df):
         <!-- Header -->
         <div class="header">
             <h1>₿ Bitcoin DCA Tracker</h1>
-            <p>Última actualización: {timestamp}</p>
         </div>
 
-        <!-- Métricas Clave (ahora con 5 tarjetas) -->
+        <!-- Sección 1: Tu Inversión Actual -->
+        <h2 class="section-title">💰 Tu Inversión Actual</h2>
         <div class="metrics-grid">
             <div class="metric-card">
                 <div class="metric-label">💵 Total Invertido</div>
@@ -525,9 +535,8 @@ def generate_dashboard(df):
                 <div class="metric-label">📈 Valor Actual</div>
                 <div class="metric-value">
                     ${valor_actual:.2f}
-                    <span class="trend-indicator">{tendencia_valor}</span>
                 </div>
-                <div class="metric-subtitle">BTC @ ${precio_actual:,.2f} {tendencia_precio}</div>
+                <div class="metric-subtitle">BTC @ ${precio_actual:,.2f}</div>
             </div>
 
             <div class="metric-card">
@@ -535,14 +544,35 @@ def generate_dashboard(df):
                 <div class="metric-value" style="color: {color_ganancia}">{simbolo}${ganancia:.2f}</div>
                 <div class="metric-subtitle" style="color: {color_ganancia}">{simbolo}{porcentaje:.2f}%</div>
             </div>
+        </div>
 
-            <!-- MEJORA 1: Nueva métrica - Precio Promedio de Compra -->
+        <!-- Sección 2: Análisis Histórico -->
+        <h2 class="section-title">📊 Análisis Histórico</h2>
+        <div class="metrics-grid">
             <div class="metric-card">
                 <div class="metric-label">📊 Precio Promedio</div>
                 <div class="metric-value">${precio_promedio:,.2f}</div>
                 <div class="metric-subtitle">
                     {'+' if diff_vs_promedio >= 0 else ''}{diff_vs_promedio:.1f}% vs actual
                 </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-label">🏆 Mejor Día de Compra</div>
+                <div class="metric-value">${mejor_dia_precio:,.2f}</div>
+                <div class="metric-subtitle">{mejor_dia_fecha} · {mejor_dia_btc:.8f} BTC</div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-label">📉 Peor Día de Compra</div>
+                <div class="metric-value">${peor_dia_precio:,.2f}</div>
+                <div class="metric-subtitle">{peor_dia_fecha} · {peor_dia_btc:.8f} BTC</div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-label">🔥 Racha Consecutiva</div>
+                <div class="metric-value">{racha_formato}</div>
+                <div class="metric-subtitle">{racha_dias} día{'s' if racha_dias != 1 else ''} totales</div>
             </div>
         </div>
 
@@ -562,32 +592,8 @@ def generate_dashboard(df):
             </div>
         </div>
 
-        <!-- MEJORA 4: Sección de Estadísticas -->
-        <div class="info-section">
-            <h2>📈 Estadísticas</h2>
-            <div class="stats-grid">
-                <div class="stat-item">
-                    <div class="stat-item-label">🏆 Mejor Día de Compra</div>
-                    <div class="stat-item-value">${mejor_dia_precio:,.2f}</div>
-                    <div class="stat-item-detail">{mejor_dia_fecha} · Compraste {mejor_dia_btc:.8f} BTC</div>
-                </div>
-
-                <div class="stat-item">
-                    <div class="stat-item-label">📉 Peor Día de Compra</div>
-                    <div class="stat-item-value">${peor_dia_precio:,.2f}</div>
-                    <div class="stat-item-detail">{peor_dia_fecha} · Compraste {peor_dia_btc:.8f} BTC</div>
-                </div>
-
-                <div class="stat-item">
-                    <div class="stat-item-label">🔥 Racha Consecutiva</div>
-                    <div class="stat-item-value">{racha_dias} día{'s' if racha_dias != 1 else ''}</div>
-                    <div class="stat-item-detail">Sin interrupciones</div>
-                </div>
-            </div>
-        </div>
-
         <footer>
-            <p>🤖 Generado automáticamente · Inicio: 14/02/2026</p>
+            <p>@ Generado automáticamente · {timestamp}</p>
         </footer>
     </div>
 
