@@ -415,6 +415,16 @@
 
         // MEJORA 2: Primer Gráfico - Evolución del DCA
         const ctx1 = document.getElementById('dcaChart').getContext('2d');
+
+        // Crear gradientes para Opción 1
+        const gradient1 = ctx1.createLinearGradient(0, 0, 0, 350);
+        gradient1.addColorStop(0, 'rgba(102, 126, 234, 0.8)');
+        gradient1.addColorStop(1, 'rgba(102, 126, 234, 0.1)');
+
+        const gradient2 = ctx1.createLinearGradient(0, 0, 0, 350);
+        gradient2.addColorStop(0, 'rgba(247, 147, 26, 0.8)');
+        gradient2.addColorStop(1, 'rgba(247, 147, 26, 0.1)');
+
         dcaChart = new Chart(ctx1, {
             type: 'line',
             data: {
@@ -424,23 +434,35 @@
                         label: '💵 USD Invertidos',
                         data: dataInvertido,
                         borderColor: '#667eea',
-                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
-                        borderWidth: 3,
+                        backgroundColor: gradient1,
+                        borderWidth: 4,
                         tension: 0.4,
                         fill: true,
-                        pointRadius: 4,
-                        pointHoverRadius: 6,
+                        pointRadius: 6,
+                        pointHoverRadius: 8,
+                        pointBackgroundColor: '#667eea',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: '#667eea',
+                        pointHoverBorderWidth: 3,
                     },
                     {
                         label: '₿ Valor en BTC',
                         data: dataValorBTC,
                         borderColor: '#f7931a',
-                        backgroundColor: 'rgba(247, 147, 26, 0.1)',
-                        borderWidth: 3,
+                        backgroundColor: gradient2,
+                        borderWidth: 4,
                         tension: 0.4,
                         fill: true,
-                        pointRadius: 4,
-                        pointHoverRadius: 6,
+                        pointRadius: 6,
+                        pointHoverRadius: 8,
+                        pointBackgroundColor: '#f7931a',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: '#f7931a',
+                        pointHoverBorderWidth: 3,
                     }
                 ]
             },
@@ -452,13 +474,22 @@
                     intersect: false,
                 },
                 plugins: {
+                    title: {
+                        display: true,
+                        text: '📊 Evolución del DCA',
+                        color: getChartColors().textColor,
+                        font: { size: 18, weight: 'bold' },
+                        padding: 20
+                    },
                     tooltip: {
-                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                        padding: 12,
-                        titleFont: { size: 14, weight: 'bold' },
-                        bodyFont: { size: 13 },
+                        backgroundColor: 'rgba(0, 0, 0, 0.9)',
+                        padding: 15,
+                        titleFont: { size: 15, weight: 'bold' },
+                        bodyFont: { size: 14 },
                         borderColor: '#667eea',
-                        borderWidth: 1,
+                        borderWidth: 2,
+                        cornerRadius: 8,
+                        displayColors: true,
                         callbacks: {
                             label: function(context) {
                                 return context.dataset.label + ': $' + context.parsed.y.toFixed(2);
@@ -469,9 +500,10 @@
                         position: 'top',
                         labels: {
                             color: getChartColors().textColor,
-                            font: { size: 14, weight: '500' },
+                            font: { size: 14, weight: '600' },
                             padding: 20,
                             usePointStyle: true,
+                            pointStyle: 'circle'
                         }
                     }
                 },
@@ -482,36 +514,27 @@
                         grace: '5%',
                         grid: {
                             color: getChartColors().gridColor,
-                            drawBorder: true,
-                            drawOnChartArea: true,
                             lineWidth: 1,
                         },
                         ticks: {
                             color: getChartColors().textColor,
+                            font: { size: 12, weight: '500' },
                             stepSize: 2,
                             callback: function(value) {
                                 return '$' + value.toFixed(0);
                             }
-                        },
-                        border: {
-                            color: getChartColors().gridColor,
-                            width: 2,
                         }
                     },
                     x: {
                         grid: {
-                            color: getChartColors().gridColor,
-                            drawBorder: true,
+                            color: 'rgba(255, 255, 255, 0.05)',
                             lineWidth: 1,
                         },
                         ticks: {
                             color: getChartColors().textColor,
+                            font: { size: 12, weight: '500' },
                             maxRotation: 45,
                             minRotation: 45,
-                        },
-                        border: {
-                            color: getChartColors().gridColor,
-                            width: 2,
                         }
                     }
                 }
@@ -520,6 +543,12 @@
 
         // MEJORA 2: Segundo Gráfico - Precio de Bitcoin
         const ctx2 = document.getElementById('btcPriceChart').getContext('2d');
+
+        // Crear gradiente para el segundo gráfico
+        const gradient3 = ctx2.createLinearGradient(0, 0, 0, 350);
+        gradient3.addColorStop(0, 'rgba(16, 185, 129, 0.8)');
+        gradient3.addColorStop(1, 'rgba(16, 185, 129, 0.1)');
+
         btcPriceChart = new Chart(ctx2, {
             type: 'line',
             data: {
@@ -529,12 +558,18 @@
                         label: '💰 Precio de Bitcoin (USD)',
                         data: dataPrecioBTC,
                         borderColor: '#10b981',
-                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                        borderWidth: 3,
+                        backgroundColor: gradient3,
+                        borderWidth: 4,
                         tension: 0.4,
                         fill: true,
-                        pointRadius: 4,
-                        pointHoverRadius: 6,
+                        pointRadius: 6,
+                        pointHoverRadius: 8,
+                        pointBackgroundColor: '#10b981',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: '#10b981',
+                        pointHoverBorderWidth: 3,
                     }
                 ]
             },
@@ -546,27 +581,29 @@
                     intersect: false,
                 },
                 plugins: {
+                    title: {
+                        display: true,
+                        text: '💹 Precio de Bitcoin en el Tiempo',
+                        color: getChartColors().textColor,
+                        font: { size: 18, weight: 'bold' },
+                        padding: 20
+                    },
                     tooltip: {
-                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                        padding: 12,
-                        titleFont: { size: 14, weight: 'bold' },
-                        bodyFont: { size: 13 },
+                        backgroundColor: 'rgba(0, 0, 0, 0.9)',
+                        padding: 15,
+                        titleFont: { size: 15, weight: 'bold' },
+                        bodyFont: { size: 14 },
                         borderColor: '#10b981',
-                        borderWidth: 1,
+                        borderWidth: 2,
+                        cornerRadius: 8,
                         callbacks: {
                             label: function(context) {
-                                return 'Precio: $' + context.parsed.y.toLocaleString('en-US', {minimumFractionDigits: 2});
+                                return 'Precio: $' + context.parsed.y.toLocaleString('en-US');
                             }
                         }
                     },
                     legend: {
-                        position: 'top',
-                        labels: {
-                            color: getChartColors().textColor,
-                            font: { size: 14, weight: '500' },
-                            padding: 20,
-                            usePointStyle: true,
-                        }
+                        display: false
                     }
                 },
                 scales: {
@@ -575,36 +612,27 @@
                         grace: '10%',
                         grid: {
                             color: getChartColors().gridColor,
-                            drawBorder: true,
-                            drawOnChartArea: true,
                             lineWidth: 1,
                         },
                         ticks: {
                             color: getChartColors().textColor,
+                            font: { size: 12, weight: '500' },
                             maxTicksLimit: 8,
                             callback: function(value) {
-                                return '$' + value.toLocaleString('en-US', {maximumFractionDigits: 0});
+                                return '$' + value.toLocaleString('en-US');
                             }
-                        },
-                        border: {
-                            color: getChartColors().gridColor,
-                            width: 2,
                         }
                     },
                     x: {
                         grid: {
-                            color: getChartColors().gridColor,
-                            drawBorder: true,
+                            color: 'rgba(255, 255, 255, 0.05)',
                             lineWidth: 1,
                         },
                         ticks: {
                             color: getChartColors().textColor,
+                            font: { size: 12, weight: '500' },
                             maxRotation: 45,
                             minRotation: 45,
-                        },
-                        border: {
-                            color: getChartColors().gridColor,
-                            width: 2,
                         }
                     }
                 }
@@ -616,6 +644,7 @@
             const colors = getChartColors();
 
             // Actualizar DCA Chart
+            dcaChart.options.plugins.title.color = colors.textColor;
             dcaChart.options.plugins.legend.labels.color = colors.textColor;
             dcaChart.options.scales.x.ticks.color = colors.textColor;
             dcaChart.options.scales.y.ticks.color = colors.textColor;
@@ -624,7 +653,7 @@
             dcaChart.update();
 
             // Actualizar BTC Price Chart
-            btcPriceChart.options.plugins.legend.labels.color = colors.textColor;
+            btcPriceChart.options.plugins.title.color = colors.textColor;
             btcPriceChart.options.scales.x.ticks.color = colors.textColor;
             btcPriceChart.options.scales.y.ticks.color = colors.textColor;
             btcPriceChart.options.scales.x.grid.color = colors.gridColor;
