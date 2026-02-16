@@ -478,6 +478,7 @@ def generate_dashboard(df):
         /* Gráficos */
         .chart-container {{
             position: relative;
+            height: 400px;
             margin-bottom: 30px;
         }}
 
