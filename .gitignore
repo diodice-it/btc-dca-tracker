@@ -33,3 +33,6 @@ build/
 venv/
 env/
 ENV/
+
+# Archivos preview para decisiones de diseño
+preview-*.html

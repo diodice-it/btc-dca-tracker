@@ -143,6 +143,7 @@
             stroke-linecap: round;
             stroke-linejoin: round;
             transition: all 0.3s ease;
+            pointer-events: none;
         }
 
         .theme-toggle-text {
@@ -497,7 +498,7 @@
                         <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
                     </g>
                     <!-- Luna (modo light) -->
-                    <path class="moon-icon" d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" style="display: none;"/>
+                    <path class="moon-icon" d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" style="visibility: hidden;"/>
                 </svg>
             </div>
 
@@ -609,12 +610,12 @@
 
             if (theme === 'dark') {
                 // Modo dark: mostrar sol (para cambiar a light)
-                sunIcon.style.display = 'block';
-                moonIcon.style.display = 'none';
+                sunIcon.style.visibility = 'visible';
+                moonIcon.style.visibility = 'hidden';
             } else {
                 // Modo light: mostrar luna (para cambiar a dark)
-                sunIcon.style.display = 'none';
-                moonIcon.style.display = 'block';
+                sunIcon.style.visibility = 'hidden';
+                moonIcon.style.visibility = 'visible';
             }
         }
 

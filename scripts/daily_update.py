@@ -14,7 +14,7 @@ import sys
 # Configuración de rutas
 BASE_DIR = Path(__file__).parent.parent
 CSV_FILE = BASE_DIR / "data" / "btc_purchases.csv"
-DASHBOARD_FILE = BASE_DIR / "dashboard.html"
+DASHBOARD_FILE = BASE_DIR / "index.html"
 LOG_DIR = BASE_DIR / "logs"
 
 # Crear directorio de logs si no existe
@@ -237,11 +237,11 @@ def generate_dashboard(df):
 <html lang="es" data-theme="dark">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
     <title>📊 Bitcoin DCA Tracker</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {{
@@ -272,6 +272,17 @@ def generate_dashboard(df):
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+        }}
+
+        /* Mejoras para experiencia táctil en mobile */
+        * {{
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+        }}
+
+        html {{
+            -webkit-text-size-adjust: 100%;
+            text-size-adjust: 100%;
         }}
 
         body {{
@@ -334,114 +345,135 @@ def generate_dashboard(df):
             animation: fadeInUp 0.6s ease 0.2s both;
         }}
 
-        /* MEJORA 5: MODO OSCURO - Toggle */
+        /* MODO OSCURO - Toggle (Icono SVG minimalista) */
         .theme-toggle {{
-            position: fixed;
-            top: 30px;
-            right: 30px;
+            position: absolute;
+            top: 0;
+            right: 0;
             background: var(--card-bg);
             border: 1px solid var(--card-border);
             backdrop-filter: blur(10px);
-            padding: 12px 20px;
-            border-radius: 50px;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
             cursor: pointer;
-            font-size: 1.2em;
             box-shadow: 0 4px 12px var(--shadow);
             transition: all 0.3s ease;
-            z-index: 1000;
             display: flex;
             align-items: center;
-            gap: 8px;
+            justify-content: center;
         }}
 
         .theme-toggle:hover {{
-            transform: translateY(-2px);
+            transform: translateY(-2px) rotate(20deg);
             box-shadow: 0 6px 16px var(--shadow-hover);
         }}
 
-        .theme-toggle-text {{
-            font-size: 0.85em;
-            color: var(--text-secondary);
-            font-weight: 500;
+        .theme-toggle svg {{
+            width: 24px;
+            height: 24px;
+            fill: none;
+            stroke: var(--text-primary);
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            transition: all 0.3s ease;
+            pointer-events: none;
         }}
 
-        /* Métricas Grid - Ahora con 5 tarjetas */
+        .theme-toggle-text {{
+            display: none;
+        }}
+
+        /* Métricas Grid - Estilo compacto con bordes de color */
         .metrics-grid {{
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 24px;
+            grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+            gap: 14px;
             margin-bottom: 30px;
         }}
 
-        /* Glassmorphism en tarjetas */
+        /* Cards con borde de color y separador */
         .metric-card {{
             background: var(--card-bg);
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
-            border: 1px solid var(--card-border);
-            padding: 28px;
-            border-radius: 20px;
-            box-shadow: 0 8px 32px var(--shadow);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border-left: 4px solid #667eea;
+            padding: 18px 22px;
+            border-radius: 12px;
+            box-shadow: 0 4px 16px var(--shadow);
+            transition: all 0.3s ease;
             position: relative;
-            overflow: hidden;
             animation: fadeInUp 0.6s ease both;
+            display: flex;
+            flex-direction: column;
         }}
 
-        .metric-card:nth-child(1) {{ animation-delay: 0.1s; }}
-        .metric-card:nth-child(2) {{ animation-delay: 0.15s; }}
-        .metric-card:nth-child(3) {{ animation-delay: 0.2s; }}
-        .metric-card:nth-child(4) {{ animation-delay: 0.25s; }}
-        .metric-card:nth-child(5) {{ animation-delay: 0.3s; }}
-        .metric-card:nth-child(6) {{ animation-delay: 0.35s; }}
-        .metric-card:nth-child(7) {{ animation-delay: 0.4s; }}
-        .metric-card:nth-child(8) {{ animation-delay: 0.45s; }}
-
-        .metric-card::before {{
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: linear-gradient(90deg, #667eea, #764ba2);
-            opacity: 0;
-            transition: opacity 0.3s ease;
+        /* Colores de borde por card */
+        .metric-card:nth-child(1) {{
+            animation-delay: 0.1s;
+            border-left-color: #667eea;
         }}
-
-        .metric-card:hover::before {{
-            opacity: 1;
+        .metric-card:nth-child(2) {{
+            animation-delay: 0.15s;
+            border-left-color: #f7931a;
+        }}
+        .metric-card:nth-child(3) {{
+            animation-delay: 0.2s;
+            border-left-color: #10b981;
+        }}
+        .metric-card:nth-child(4) {{
+            animation-delay: 0.25s;
+            border-left-color: #ef4444;
+        }}
+        .metric-card:nth-child(5) {{
+            animation-delay: 0.3s;
+            border-left-color: #8b5cf6;
+        }}
+        .metric-card:nth-child(6) {{
+            animation-delay: 0.35s;
+            border-left-color: #06b6d4;
+        }}
+        .metric-card:nth-child(7) {{
+            animation-delay: 0.4s;
+            border-left-color: #f59e0b;
+        }}
+        .metric-card:nth-child(8) {{
+            animation-delay: 0.45s;
+            border-left-color: #ec4899;
         }}
 
         .metric-card:hover {{
-            transform: translateY(-8px) scale(1.02);
-            box-shadow: 0 16px 48px var(--shadow-hover);
+            transform: translateX(4px) translateY(-2px);
+            box-shadow: 0 8px 24px var(--shadow-hover);
         }}
 
+        /* Label con separador (border-bottom) */
         .metric-label {{
-            font-size: 0.95em;
-            color: var(--text-secondary);
+            font-size: 0.7em;
+            color: var(--text-tertiary);
             margin-bottom: 12px;
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            gap: 8px;
+            padding-bottom: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            border-bottom: 1px solid var(--card-border);
         }}
 
+        /* Tipografía monoespaciada para valores */
         .metric-value {{
-            font-size: 2.2em;
-            font-weight: 700;
+            font-size: 2em;
+            font-weight: 800;
             color: var(--text-primary);
-            margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
+            margin: 8px 0 6px 0;
+            line-height: 1.1;
+            font-family: 'JetBrains Mono', 'SF Mono', 'Monaco', 'Consolas', monospace;
         }}
 
         .metric-subtitle {{
-            font-size: 0.9em;
-            color: var(--text-tertiary);
-            font-weight: 400;
+            font-size: 0.75em;
+            color: var(--text-secondary);
+            font-weight: 500;
         }}
 
         /* Títulos de secciones */
@@ -459,19 +491,35 @@ def generate_dashboard(df):
         .info-section {{
             background: var(--card-bg);
             backdrop-filter: blur(10px);
-            border: 1px solid var(--card-border);
-            padding: 35px;
-            border-radius: 20px;
-            box-shadow: 0 8px 32px var(--shadow);
-            margin-bottom: 24px;
+            border-left: 4px solid #667eea;
+            padding: 28px 32px;
+            border-radius: 12px;
+            box-shadow: 0 4px 16px var(--shadow);
+            margin-bottom: 20px;
             animation: fadeInUp 0.6s ease 0.4s both;
+            transition: all 0.3s ease;
+        }}
+
+        .info-section:hover {{
+            transform: translateX(4px) translateY(-2px);
+            box-shadow: 0 8px 24px var(--shadow-hover);
+        }}
+
+        .info-section:nth-of-type(1) {{
+            border-left-color: #8b5cf6;
+        }}
+
+        .info-section:nth-of-type(2) {{
+            border-left-color: #10b981;
         }}
 
         .info-section h2 {{
             margin-bottom: 24px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--card-border);
             color: var(--text-primary);
             font-weight: 600;
-            font-size: 1.5em;
+            font-size: 1.4em;
         }}
 
 
@@ -480,6 +528,10 @@ def generate_dashboard(df):
             position: relative;
             height: 400px;
             margin-bottom: 30px;
+        }}
+
+        .chart-container canvas {{
+            max-height: 400px;
         }}
 
         footer {{
@@ -492,28 +544,199 @@ def generate_dashboard(df):
             animation: fadeInUp 0.6s ease 0.5s both;
         }}
 
-        @media (max-width: 768px) {{
-            .header h1 {{ font-size: 2em; }}
-            .metric-value {{ font-size: 1.6em; }}
-            .theme-toggle {{
-                top: 20px;
-                right: 20px;
-                padding: 10px 16px;
+        /* ===== MOBILE RESPONSIVE - MEJORES PRÁCTICAS ===== */
+
+        /* Tablet y pantallas medianas */
+        @media (max-width: 1024px) {{
+            body {{
+                padding: 15px;
             }}
-            .info-section {{ padding: 24px; }}
+
+            .metrics-grid {{
+                grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+                gap: 12px;
+            }}
+
+            .section-title {{
+                font-size: 1.5em;
+                margin: 30px 0 15px 0;
+            }}
+        }}
+
+        /* Mobile */
+        @media (max-width: 768px) {{
+            body {{
+                padding: 12px;
+            }}
+
+            /* Header optimizado para mobile */
+            .header {{
+                margin-bottom: 30px;
+                padding-right: 55px;
+            }}
+
+            .header h1 {{
+                font-size: 1.75em;
+                margin-bottom: 8px;
+                line-height: 1.2;
+            }}
+
+            /* Botón dark mode - tamaño táctil óptimo */
+            .theme-toggle {{
+                width: 44px;
+                height: 44px;
+                top: 0;
+                right: 0;
+            }}
+
+            .theme-toggle svg {{
+                width: 20px;
+                height: 20px;
+            }}
+
+            /* Grid de 2 columnas en mobile */
+            .metrics-grid {{
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+                margin-bottom: 20px;
+            }}
+
+            /* Cards optimizadas para 2 columnas en mobile */
+            .metric-card {{
+                padding: 14px 12px;
+                border-radius: 10px;
+                border-left-width: 3px;
+            }}
+
+            .metric-label {{
+                font-size: 0.6em;
+                margin-bottom: 8px;
+                padding-bottom: 6px;
+                letter-spacing: 0.5px;
+            }}
+
+            .metric-value {{
+                font-size: 1.4em;
+                margin: 5px 0 4px 0;
+            }}
+
+            .metric-subtitle {{
+                font-size: 0.65em;
+                line-height: 1.3;
+            }}
+
+            /* Section titles más compactos */
+            .section-title {{
+                font-size: 1.3em;
+                margin: 25px 0 12px 0;
+            }}
+
+            /* Info sections optimizadas */
+            .info-section {{
+                padding: 18px 20px;
+                border-radius: 10px;
+                margin-bottom: 16px;
+            }}
+
+            .info-section h2 {{
+                font-size: 1.2em;
+                margin-bottom: 18px;
+                padding-bottom: 10px;
+            }}
+
+            /* Gráficos responsivos */
+            .chart-container {{
+                height: 280px;
+                margin-bottom: 20px;
+            }}
+
+            .chart-container canvas {{
+                max-height: 280px;
+            }}
+
+            /* Footer */
+            footer {{
+                margin-top: 30px;
+                padding: 20px;
+                font-size: 0.85em;
+            }}
+        }}
+
+        /* Mobile pequeño (iPhone SE, etc) */
+        @media (max-width: 375px) {{
+            body {{
+                padding: 10px;
+            }}
+
+            .header {{
+                padding-right: 50px;
+            }}
+
+            .header h1 {{
+                font-size: 1.5em;
+            }}
+
+            .theme-toggle {{
+                width: 40px;
+                height: 40px;
+                top: 0;
+            }}
+
+            .theme-toggle svg {{
+                width: 18px;
+                height: 18px;
+            }}
+
+            .metric-card {{
+                padding: 14px 16px;
+            }}
+
+            .metric-value {{
+                font-size: 1.4em;
+            }}
+
+            .section-title {{
+                font-size: 1.2em;
+            }}
+
+            .info-section {{
+                padding: 16px 18px;
+            }}
+
+            .chart-container {{
+                height: 240px;
+            }}
+
+            .chart-container canvas {{
+                max-height: 240px;
+            }}
         }}
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- MEJORA 5: Toggle de Modo Oscuro -->
-        <div class="theme-toggle" onclick="toggleTheme()">
-            <span id="theme-icon">☀️</span>
-            <span class="theme-toggle-text" id="theme-text">Modo Claro</span>
-        </div>
-
         <!-- Header -->
         <div class="header">
+            <!-- Toggle de Modo Oscuro -->
+            <div class="theme-toggle" onclick="toggleTheme()">
+                <svg id="theme-icon" viewBox="0 0 24 24">
+                    <!-- Sol (modo dark) -->
+                    <g class="sun-icon">
+                        <circle cx="12" cy="12" r="4"/>
+                        <line x1="12" y1="1" x2="12" y2="3"/>
+                        <line x1="12" y1="21" x2="12" y2="23"/>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                        <line x1="1" y1="12" x2="3" y2="12"/>
+                        <line x1="21" y1="12" x2="23" y2="12"/>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                    </g>
+                    <!-- Luna (modo light) -->
+                    <path class="moon-icon" d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" style="visibility: hidden;"/>
+                </svg>
+            </div>
+
             <h1>₿ Bitcoin DCA Tracker</h1>
         </div>
 
@@ -577,19 +800,19 @@ def generate_dashboard(df):
             </div>
         </div>
 
-        <!-- MEJORA 2: Primer Gráfico - Evolución del DCA -->
+        <!-- Primer Gráfico - Evolución del DCA -->
         <div class="info-section">
             <h2>📊 Evolución del DCA</h2>
             <div class="chart-container">
-                <canvas id="dcaChart" height="80"></canvas>
+                <canvas id="dcaChart"></canvas>
             </div>
         </div>
 
-        <!-- MEJORA 2: Segundo Gráfico - Precio de Bitcoin -->
+        <!-- Segundo Gráfico - Precio de Bitcoin -->
         <div class="info-section">
             <h2>💹 Precio de Bitcoin en el Tiempo</h2>
             <div class="chart-container">
-                <canvas id="btcPriceChart" height="80"></canvas>
+                <canvas id="btcPriceChart"></canvas>
             </div>
         </div>
 
@@ -599,7 +822,7 @@ def generate_dashboard(df):
     </div>
 
     <script>
-        // ===== MEJORA 5: MODO OSCURO =====
+        // ===== MODO OSCURO =====
         function toggleTheme() {{
             const html = document.documentElement;
             const currentTheme = html.getAttribute('data-theme');
@@ -608,29 +831,33 @@ def generate_dashboard(df):
             html.setAttribute('data-theme', newTheme);
             localStorage.setItem('theme', newTheme);
 
-            // Actualizar icono y texto
-            const icon = document.getElementById('theme-icon');
-            const text = document.getElementById('theme-text');
-
-            if (newTheme === 'dark') {{
-                icon.textContent = '☀️';
-                text.textContent = 'Modo Claro';
-            }} else {{
-                icon.textContent = '🌙';
-                text.textContent = 'Modo Oscuro';
-            }}
+            // Actualizar icono SVG
+            updateThemeIcon(newTheme);
 
             // Actualizar gráficos
             updateChartsTheme(newTheme);
         }}
 
+        function updateThemeIcon(theme) {{
+            const svg = document.getElementById('theme-icon');
+            const sunIcon = svg.querySelector('.sun-icon');
+            const moonIcon = svg.querySelector('.moon-icon');
+
+            if (theme === 'dark') {{
+                // Modo dark: mostrar sol (para cambiar a light)
+                sunIcon.style.visibility = 'visible';
+                moonIcon.style.visibility = 'hidden';
+            }} else {{
+                // Modo light: mostrar luna (para cambiar a dark)
+                sunIcon.style.visibility = 'hidden';
+                moonIcon.style.visibility = 'visible';
+            }}
+        }}
+
         // Cargar tema guardado
         const savedTheme = localStorage.getItem('theme') || 'dark';
         document.documentElement.setAttribute('data-theme', savedTheme);
-        if (savedTheme === 'dark') {{
-            document.getElementById('theme-icon').textContent = '☀️';
-            document.getElementById('theme-text').textContent = 'Modo Claro';
-        }}
+        updateThemeIcon(savedTheme);
 
         // Datos desde Python
         const labels = {fechas_array};
