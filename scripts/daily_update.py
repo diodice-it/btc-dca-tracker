@@ -362,6 +362,7 @@ def generate_dashboard(df):
             display: flex;
             align-items: center;
             justify-content: center;
+            z-index: 9999;
         }}
 
         .theme-toggle:hover {{
@@ -875,11 +876,12 @@ def generate_dashboard(df):
 
         // Inicializar gráficos con ECharts
         function initCharts() {{
-            const theme = getEChartsTheme();
+            try {{
+                const theme = getEChartsTheme();
 
-            // Destruir instancias previas si existen
-            if (dcaChart) dcaChart.dispose();
-            if (btcPriceChart) btcPriceChart.dispose();
+                // Destruir instancias previas si existen
+                if (dcaChart) dcaChart.dispose();
+                if (btcPriceChart) btcPriceChart.dispose();
 
             // Gráfico 1: Evolución del DCA
             dcaChart = echarts.init(document.getElementById('dcaChart'), theme);
@@ -1063,11 +1065,15 @@ def generate_dashboard(df):
                 }}]
             }});
 
-            // Responsive automático
-            window.addEventListener('resize', function() {{
-                dcaChart.resize();
-                btcPriceChart.resize();
-            }});
+                // Responsive automático
+                window.addEventListener('resize', function() {{
+                    if (dcaChart) dcaChart.resize();
+                    if (btcPriceChart) btcPriceChart.resize();
+                }});
+            }} catch (error) {{
+                console.error('Error al inicializar gráficos:', error);
+                // Aunque falle, el resto del sitio debe funcionar
+            }}
         }}
 
         // Función actualizada de toggle theme
@@ -1085,9 +1091,12 @@ def generate_dashboard(df):
         }}
 
         // Inicializar gráficos cuando el DOM esté completamente cargado
-        document.addEventListener('DOMContentLoaded', function() {{
+        if (document.readyState === 'loading') {{
+            document.addEventListener('DOMContentLoaded', initCharts);
+        }} else {{
+            // DOM ya está listo, ejecutar inmediatamente
             initCharts();
-        }});
+        }}
     </script>
 </body>
 </html>"""
