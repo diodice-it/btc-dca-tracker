@@ -40,12 +40,7 @@ jobs:
           cd ${{ github.workspace }}
           python scripts/daily_update.py
 
-      # 5. Copiar dashboard a index.html para GitHub Pages
-      - name: Update index.html
-        run: |
-          cp dashboard.html index.html
-
-      # 6. Verificar si hay cambios
+      # 5. Verificar si hay cambios
       - name: Check for changes
         id: git-check
         run: |
@@ -57,7 +52,7 @@ jobs:
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          git add data/btc_purchases.csv dashboard.html index.html
+          git add data/btc_purchases.csv index.html logs/
           git commit -m "🤖 Auto-update: $(date +'%Y-%m-%d %H:%M UTC')"
           git push
         env:
