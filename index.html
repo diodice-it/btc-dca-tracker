@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;800&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
     <style>
         :root {
             --bg-gradient-start: #667eea;
@@ -295,10 +295,6 @@
             margin-bottom: 30px;
         }
 
-        .chart-container canvas {
-            max-height: 400px;
-        }
-
         footer {
             text-align: center;
             color: white;
@@ -415,10 +411,6 @@
                 margin-bottom: 20px;
             }
 
-            .chart-container canvas {
-                max-height: 280px;
-            }
-
             /* Footer */
             footer {
                 margin-top: 30px;
@@ -470,10 +462,6 @@
 
             .chart-container {
                 height: 240px;
-            }
-
-            .chart-container canvas {
-                max-height: 240px;
             }
         }
     </style>
@@ -569,7 +557,7 @@
         <div class="info-section">
             <h2>📊 Evolución del DCA</h2>
             <div class="chart-container">
-                <canvas id="dcaChart"></canvas>
+                <div id="dcaChart" style="width: 100%; height: 100%;"></div>
             </div>
         </div>
 
@@ -577,32 +565,17 @@
         <div class="info-section">
             <h2>💹 Precio de Bitcoin en el Tiempo</h2>
             <div class="chart-container">
-                <canvas id="btcPriceChart"></canvas>
+                <div id="btcPriceChart" style="width: 100%; height: 100%;"></div>
             </div>
         </div>
 
         <footer>
-            <p>@ Generado automáticamente · 16/02/2026 12:41:38</p>
+            <p>@ Generado automáticamente · 16/02/2026 13:06:59</p>
         </footer>
     </div>
 
     <script>
         // ===== MODO OSCURO =====
-        function toggleTheme() {
-            const html = document.documentElement;
-            const currentTheme = html.getAttribute('data-theme');
-            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-
-            html.setAttribute('data-theme', newTheme);
-            localStorage.setItem('theme', newTheme);
-
-            // Actualizar icono SVG
-            updateThemeIcon(newTheme);
-
-            // Actualizar gráficos
-            updateChartsTheme(newTheme);
-        }
-
         function updateThemeIcon(theme) {
             const svg = document.getElementById('theme-icon');
             const sunIcon = svg.querySelector('.sun-icon');
@@ -625,243 +598,259 @@
         updateThemeIcon(savedTheme);
 
         // Datos desde Python
-        const labels = ['14 Feb', '15 Feb', '16 Feb'];
+        const labels = ['14 feb.', '15 feb.', '16 feb.'];
         const dataInvertido = [2.0, 4.0, 6.0];
         const dataValorBTC = [2.0, 4.015533646681188, 5.966200241244613];
         const dataPrecioBTC = [69784, 70326, 69462];
 
-        // Configuración de colores según tema
-        function getChartColors() {
+        // ===== APACHE ECHARTS - GRÁFICOS =====
+
+        // Configuración de tema según modo
+        function getEChartsTheme() {
             const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            return isDark ? 'dark' : null; // null es el tema light por defecto
+        }
+
+        // Calcular rango dinámico para precio BTC (margen del 2%)
+        function getBTCPriceRange() {
+            const min = Math.min(...dataPrecioBTC);
+            const max = Math.max(...dataPrecioBTC);
+            const range = max - min;
+            const margin = range * 0.5; // 50% de margen arriba y abajo
             return {
-                textColor: isDark ? '#f3f4f6' : '#1f2937',
-                gridColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+                min: Math.floor(min - margin),
+                max: Math.ceil(max + margin)
+            };
+        }
+
+        // Calcular rango dinámico para DCA (comenzar cerca del primer valor)
+        function getDCARange() {
+            const allValues = [...dataInvertido, ...dataValorBTC];
+            const min = Math.min(...allValues);
+            const max = Math.max(...allValues);
+            const range = max - min;
+            const margin = range * 0.3; // 30% de margen
+            return {
+                min: Math.max(0, Math.floor(min - margin)),
+                max: Math.ceil(max + margin)
             };
         }
 
         let dcaChart, btcPriceChart;
 
-        // MEJORA 2: Primer Gráfico - Evolución del DCA
-        const ctx1 = document.getElementById('dcaChart').getContext('2d');
-        dcaChart = new Chart(ctx1, {
-            type: 'line',
-            data: {
-                labels: labels,
-                datasets: [
+        // Inicializar gráficos con ECharts
+        function initCharts() {
+            const theme = getEChartsTheme();
+
+            // Destruir instancias previas si existen
+            if (dcaChart) dcaChart.dispose();
+            if (btcPriceChart) btcPriceChart.dispose();
+
+            // Gráfico 1: Evolución del DCA
+            dcaChart = echarts.init(document.getElementById('dcaChart'), theme);
+            dcaChart.setOption({
+                animation: true,
+                animationDuration: 1000,
+                animationEasing: 'cubicOut',
+                tooltip: {
+                    trigger: 'axis',
+                    axisPointer: {
+                        type: 'cross',
+                        crossStyle: {
+                            color: '#667eea'
+                        }
+                    },
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    borderColor: '#667eea',
+                    borderWidth: 1,
+                    textStyle: { fontSize: 13 },
+                    formatter: function(params) {
+                        let result = params[0].name + '<br/>';
+                        params.forEach(item => {
+                            result += item.marker + ' ' + item.seriesName + ': $' +
+                                     item.value.toFixed(2) + '<br/>';
+                        });
+                        return result;
+                    }
+                },
+                legend: {
+                    data: ['💵 USD Invertidos', '₿ Valor en BTC'],
+                    top: 10,
+                    textStyle: { fontSize: 13 }
+                },
+                grid: {
+                    left: '3%',
+                    right: '4%',
+                    bottom: '3%',
+                    top: 60,
+                    containLabel: true
+                },
+                xAxis: {
+                    type: 'category',
+                    data: labels,
+                    boundaryGap: false, // Comienza justo en el primer punto
+                    axisLabel: { rotate: 45 },
+                    axisLine: { show: false }, // Sin línea del eje
+                    axisTick: { show: false }, // Sin ticks
+                    splitLine: { show: false } // Sin líneas de cuadrícula
+                },
+                yAxis: {
+                    type: 'value',
+                    scale: true,
+                    min: getDCARange().min,
+                    max: getDCARange().max,
+                    axisLabel: {
+                        formatter: '${value}'
+                    },
+                    axisLine: { show: false }, // Sin línea del eje
+                    axisTick: { show: false }, // Sin ticks
+                    splitLine: { show: false } // Sin líneas de cuadrícula
+                },
+                series: [
                     {
-                        label: '💵 USD Invertidos',
+                        name: '💵 USD Invertidos',
+                        type: 'line',
                         data: dataInvertido,
-                        borderColor: '#667eea',
-                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
-                        borderWidth: 3,
-                        tension: 0.4,
-                        fill: true,
-                        pointRadius: 4,
-                        pointHoverRadius: 6,
+                        smooth: true,
+                        lineStyle: { width: 3, color: '#667eea' },
+                        itemStyle: { color: '#667eea' },
+                        areaStyle: {
+                            color: {
+                                type: 'linear',
+                                x: 0, y: 0, x2: 0, y2: 1,
+                                colorStops: [
+                                    { offset: 0, color: 'rgba(102, 126, 234, 0.3)' },
+                                    { offset: 1, color: 'rgba(102, 126, 234, 0.05)' }
+                                ]
+                            }
+                        },
+                        emphasis: { focus: 'series' }
                     },
                     {
-                        label: '₿ Valor en BTC',
+                        name: '₿ Valor en BTC',
+                        type: 'line',
                         data: dataValorBTC,
-                        borderColor: '#f7931a',
-                        backgroundColor: 'rgba(247, 147, 26, 0.1)',
-                        borderWidth: 3,
-                        tension: 0.4,
-                        fill: true,
-                        pointRadius: 4,
-                        pointHoverRadius: 6,
+                        smooth: true,
+                        lineStyle: { width: 3, color: '#f7931a' },
+                        itemStyle: { color: '#f7931a' },
+                        areaStyle: {
+                            color: {
+                                type: 'linear',
+                                x: 0, y: 0, x2: 0, y2: 1,
+                                colorStops: [
+                                    { offset: 0, color: 'rgba(247, 147, 26, 0.3)' },
+                                    { offset: 1, color: 'rgba(247, 147, 26, 0.05)' }
+                                ]
+                            }
+                        },
+                        emphasis: { focus: 'series' }
                     }
                 ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                interaction: {
-                    mode: 'index',
-                    intersect: false,
-                },
-                plugins: {
-                    tooltip: {
-                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                        padding: 12,
-                        titleFont: { size: 14, weight: 'bold' },
-                        bodyFont: { size: 13 },
-                        borderColor: '#667eea',
-                        borderWidth: 1,
-                        callbacks: {
-                            label: function(context) {
-                                return context.dataset.label + ': $' + context.parsed.y.toFixed(2);
-                            }
+            });
+
+            // Gráfico 2: Precio de Bitcoin
+            btcPriceChart = echarts.init(document.getElementById('btcPriceChart'), theme);
+            btcPriceChart.setOption({
+                animation: true,
+                animationDuration: 1000,
+                animationEasing: 'cubicOut',
+                tooltip: {
+                    trigger: 'axis',
+                    axisPointer: {
+                        type: 'cross',
+                        crossStyle: {
+                            color: '#10b981'
                         }
                     },
-                    legend: {
-                        position: 'top',
-                        labels: {
-                            color: getChartColors().textColor,
-                            font: { size: 14, weight: '500' },
-                            padding: 20,
-                            usePointStyle: true,
-                        }
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    borderColor: '#10b981',
+                    borderWidth: 1,
+                    textStyle: { fontSize: 13 },
+                    formatter: function(params) {
+                        return params[0].name + '<br/>' +
+                               params[0].marker + ' Precio: $' +
+                               params[0].value.toLocaleString('en-US', {minimumFractionDigits: 2});
                     }
                 },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        suggestedMax: 10,
-                        grace: '5%',
-                        grid: {
-                            color: getChartColors().gridColor,
-                            drawBorder: true,
-                            drawOnChartArea: true,
-                            lineWidth: 1,
-                        },
-                        ticks: {
-                            color: getChartColors().textColor,
-                            stepSize: 2,
-                            callback: function(value) {
-                                return '$' + value.toFixed(0);
-                            }
-                        },
-                        border: {
-                            color: getChartColors().gridColor,
-                            width: 2,
-                        }
-                    },
-                    x: {
-                        grid: {
-                            color: getChartColors().gridColor,
-                            drawBorder: true,
-                            lineWidth: 1,
-                        },
-                        ticks: {
-                            color: getChartColors().textColor,
-                            maxRotation: 45,
-                            minRotation: 45,
-                        },
-                        border: {
-                            color: getChartColors().gridColor,
-                            width: 2,
-                        }
-                    }
-                }
-            }
-        });
-
-        // MEJORA 2: Segundo Gráfico - Precio de Bitcoin
-        const ctx2 = document.getElementById('btcPriceChart').getContext('2d');
-        btcPriceChart = new Chart(ctx2, {
-            type: 'line',
-            data: {
-                labels: labels,
-                datasets: [
-                    {
-                        label: '💰 Precio de Bitcoin (USD)',
-                        data: dataPrecioBTC,
-                        borderColor: '#10b981',
-                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                        borderWidth: 3,
-                        tension: 0.4,
-                        fill: true,
-                        pointRadius: 4,
-                        pointHoverRadius: 6,
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                interaction: {
-                    mode: 'index',
-                    intersect: false,
+                legend: {
+                    data: ['💰 Precio de Bitcoin (USD)'],
+                    top: 10,
+                    textStyle: { fontSize: 13 }
                 },
-                plugins: {
-                    tooltip: {
-                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                        padding: 12,
-                        titleFont: { size: 14, weight: 'bold' },
-                        bodyFont: { size: 13 },
-                        borderColor: '#10b981',
-                        borderWidth: 1,
-                        callbacks: {
-                            label: function(context) {
-                                return 'Precio: $' + context.parsed.y.toLocaleString('en-US', {minimumFractionDigits: 2});
-                            }
-                        }
-                    },
-                    legend: {
-                        position: 'top',
-                        labels: {
-                            color: getChartColors().textColor,
-                            font: { size: 14, weight: '500' },
-                            padding: 20,
-                            usePointStyle: true,
-                        }
-                    }
+                grid: {
+                    left: '3%',
+                    right: '4%',
+                    bottom: '3%',
+                    top: 60,
+                    containLabel: true
                 },
-                scales: {
-                    y: {
-                        beginAtZero: false,
-                        grace: '10%',
-                        grid: {
-                            color: getChartColors().gridColor,
-                            drawBorder: true,
-                            drawOnChartArea: true,
-                            lineWidth: 1,
-                        },
-                        ticks: {
-                            color: getChartColors().textColor,
-                            maxTicksLimit: 8,
-                            callback: function(value) {
-                                return '$' + value.toLocaleString('en-US', {maximumFractionDigits: 0});
-                            }
-                        },
-                        border: {
-                            color: getChartColors().gridColor,
-                            width: 2,
+                xAxis: {
+                    type: 'category',
+                    data: labels,
+                    boundaryGap: false, // Comienza justo en el primer punto
+                    axisLabel: { rotate: 45 },
+                    axisLine: { show: false }, // Sin línea del eje
+                    axisTick: { show: false }, // Sin ticks
+                    splitLine: { show: false } // Sin líneas de cuadrícula
+                },
+                yAxis: {
+                    type: 'value',
+                    scale: true,
+                    min: getBTCPriceRange().min,
+                    max: getBTCPriceRange().max,
+                    axisLabel: {
+                        formatter: function(value) {
+                            return '$' + value.toLocaleString('en-US', {maximumFractionDigits: 0});
                         }
                     },
-                    x: {
-                        grid: {
-                            color: getChartColors().gridColor,
-                            drawBorder: true,
-                            lineWidth: 1,
-                        },
-                        ticks: {
-                            color: getChartColors().textColor,
-                            maxRotation: 45,
-                            minRotation: 45,
-                        },
-                        border: {
-                            color: getChartColors().gridColor,
-                            width: 2,
+                    axisLine: { show: false }, // Sin línea del eje
+                    axisTick: { show: false }, // Sin ticks
+                    splitLine: { show: false } // Sin líneas de cuadrícula
+                },
+                series: [{
+                    name: '💰 Precio de Bitcoin (USD)',
+                    type: 'line',
+                    data: dataPrecioBTC,
+                    smooth: true,
+                    lineStyle: { width: 3, color: '#10b981' },
+                    itemStyle: { color: '#10b981' },
+                    areaStyle: {
+                        color: {
+                            type: 'linear',
+                            x: 0, y: 0, x2: 0, y2: 1,
+                            colorStops: [
+                                { offset: 0, color: 'rgba(16, 185, 129, 0.3)' },
+                                { offset: 1, color: 'rgba(16, 185, 129, 0.05)' }
+                            ]
                         }
-                    }
-                }
-            }
-        });
+                    },
+                    emphasis: { focus: 'series' }
+                }]
+            });
 
-        // Función para actualizar tema de los gráficos
-        function updateChartsTheme(theme) {
-            const colors = getChartColors();
-
-            // Actualizar DCA Chart
-            dcaChart.options.plugins.legend.labels.color = colors.textColor;
-            dcaChart.options.scales.x.ticks.color = colors.textColor;
-            dcaChart.options.scales.y.ticks.color = colors.textColor;
-            dcaChart.options.scales.x.grid.color = colors.gridColor;
-            dcaChart.options.scales.y.grid.color = colors.gridColor;
-            dcaChart.update();
-
-            // Actualizar BTC Price Chart
-            btcPriceChart.options.plugins.legend.labels.color = colors.textColor;
-            btcPriceChart.options.scales.x.ticks.color = colors.textColor;
-            btcPriceChart.options.scales.y.ticks.color = colors.textColor;
-            btcPriceChart.options.scales.x.grid.color = colors.gridColor;
-            btcPriceChart.options.scales.y.grid.color = colors.gridColor;
-            btcPriceChart.update();
+            // Responsive automático
+            window.addEventListener('resize', function() {
+                dcaChart.resize();
+                btcPriceChart.resize();
+            });
         }
 
-        // Aplicar tema inicial a los gráficos
-        updateChartsTheme(savedTheme);
+        // Función actualizada de toggle theme
+        function toggleTheme() {
+            const html = document.documentElement;
+            const currentTheme = html.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+
+            html.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            updateThemeIcon(newTheme);
+
+            // Recrear gráficos con nuevo tema
+            initCharts();
+        }
+
+        // Inicializar gráficos cuando la página carga
+        initCharts();
     </script>
 </body>
 </html>
