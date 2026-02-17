@@ -1084,8 +1084,10 @@ def generate_dashboard(df):
             initCharts();
         }}
 
-        // Inicializar gráficos cuando la página carga
-        initCharts();
+        // Inicializar gráficos cuando el DOM esté completamente cargado
+        document.addEventListener('DOMContentLoaded', function() {{
+            initCharts();
+        }});
     </script>
 </body>
 </html>"""
