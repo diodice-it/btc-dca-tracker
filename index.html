@@ -4,11 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
     <title>📊 Bitcoin DCA Tracker</title>
-    <link rel="manifest" href="manifest.json">
-    <link rel="icon" type="image/svg+xml" href="icon.svg">
-    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
-    <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <meta name="theme-color" content="#F7931A">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;800&display=swap" rel="stylesheet">
@@ -504,28 +499,28 @@
         <div class="metrics-grid">
             <div class="metric-card">
                 <div class="metric-label">💵 Total Invertido</div>
-                <div class="metric-value">$16.00</div>
-                <div class="metric-subtitle">8 días × $2 USD</div>
+                <div class="metric-value">$18.00</div>
+                <div class="metric-subtitle">9 días × $2 USD</div>
             </div>
 
             <div class="metric-card">
                 <div class="metric-label">₿ BTC Acumulado</div>
-                <div class="metric-value">0.00023410</div>
-                <div class="metric-subtitle">Satoshis: 23,409</div>
+                <div class="metric-value">0.00026349</div>
+                <div class="metric-subtitle">Satoshis: 26,348</div>
             </div>
 
             <div class="metric-card">
                 <div class="metric-label">📈 Valor Actual</div>
                 <div class="metric-value">
-                    $15.91
+                    $17.93
                 </div>
-                <div class="metric-subtitle">BTC @ $67,963.00</div>
+                <div class="metric-subtitle">BTC @ $68,044.00</div>
             </div>
 
             <div class="metric-card">
                 <div class="metric-label">📉 Ganancia/Pérdida</div>
-                <div class="metric-value" style="color: #ef4444">$-0.09</div>
-                <div class="metric-subtitle" style="color: #ef4444">-0.56%</div>
+                <div class="metric-value" style="color: #ef4444">$-0.07</div>
+                <div class="metric-subtitle" style="color: #ef4444">-0.40%</div>
             </div>
         </div>
 
@@ -534,9 +529,9 @@
         <div class="metrics-grid">
             <div class="metric-card">
                 <div class="metric-label">📊 Precio Promedio</div>
-                <div class="metric-value">$68,348.29</div>
+                <div class="metric-value">$68,314.35</div>
                 <div class="metric-subtitle">
-                    -0.6% vs actual
+                    -0.4% vs actual
                 </div>
             </div>
 
@@ -554,8 +549,8 @@
 
             <div class="metric-card">
                 <div class="metric-label">🔥 Racha Consecutiva</div>
-                <div class="metric-value">8 días</div>
-                <div class="metric-subtitle">8 días totales</div>
+                <div class="metric-value">9 días</div>
+                <div class="metric-subtitle">9 días totales</div>
             </div>
         </div>
 
@@ -576,7 +571,7 @@
         </div>
 
         <footer>
-            <p>@ Generado automáticamente · 21/02/2026 12:28:49</p>
+            <p>@ Generado automáticamente · 22/02/2026 12:29:46</p>
         </footer>
     </div>
 
@@ -604,10 +599,10 @@
         updateThemeIcon(savedTheme);
 
         // Datos desde Python
-        const labels = ['14 Feb', '15 Feb', '16 Feb', '17 Feb', '18 Feb', '19 Feb', '20 Feb', '21 Feb'];
-        const dataInvertido = [2.0, 4.0, 6.0, 8.0, 10.0, 12.0, 14.0, 16.0];
-        const dataValorBTC = [2.0, 4.015533646681188, 5.966200241244613, 7.843718862303396, 9.771894580287425, 11.65230617702887, 13.793348989224226, 15.909804691136202];
-        const dataPrecioBTC = [69784, 70326, 69462, 68036, 67413, 66588, 67394, 67963];
+        const labels = ['14 Feb', '15 Feb', '16 Feb', '17 Feb', '18 Feb', '19 Feb', '20 Feb', '21 Feb', '22 Feb'];
+        const dataInvertido = [2.0, 4.0, 6.0, 8.0, 10.0, 12.0, 14.0, 16.0, 18.0];
+        const dataValorBTC = [2.0, 4.015533646681188, 5.966200241244613, 7.843718862303396, 9.771894580287425, 11.65230617702887, 13.793348989224226, 15.909804691136202, 17.928766393526317];
+        const dataPrecioBTC = [69784, 70326, 69462, 68036, 67413, 66588, 67394, 67963, 68044];
 
         // ===== APACHE ECHARTS - GRÁFICOS =====
 
