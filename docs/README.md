@@ -193,20 +193,22 @@ El dashboard muestra 4 tarjetas con información clave:
 #### 1. 💵 Total Invertido
 ```
 $X.XX
-Y días × $2 USD
+Y días × $2 USD · Fees: $X.XXX
 ```
 - **Qué significa**: Cuánta plata invertiste en total hasta hoy
 - **Cálculo**: Número de días × $2 USD
-- **Ejemplo**: Si llevás 30 días, invertiste $60 USD
+- **Subtítulo**: Muestra el total de comisiones pagadas
+- **Ejemplo**: Si llevás 30 días, invertiste $60 USD y pagaste $0.18 en fees
 
 #### 2. ₿ BTC Acumulado
 ```
 0.XXXXXXXX BTC
 Satoshis: XXX,XXX
 ```
-- **Qué significa**: Cuánto Bitcoin acumulaste con tus compras
+- **Qué significa**: Cuánto Bitcoin acumulaste (ya descontadas las comisiones)
 - **Satoshis**: 1 BTC = 100,000,000 satoshis (es como los centavos del Bitcoin)
 - **Ejemplo**: 0.00100000 BTC = 100,000 satoshis
+- **Nota**: Refleja el BTC real recibido, no el bruto sin comisión
 
 #### 3. 📈 Valor Actual
 ```
@@ -217,15 +219,29 @@ BTC @ $XX,XXX
 - **Cálculo**: BTC acumulado × Precio actual de BTC
 - **Ejemplo**: Si tenés 0.001 BTC y BTC vale $70,000 → Valor = $70
 
-#### 4. 📈/📉 Ganancia/Pérdida
+#### 4. 📈/📉 Ganancia Real (con fees)
 ```
 +$XX.XX (verde) o -$XX.XX (rojo)
-+X.XX% o -X.XX%
++X.XX% · Bruta: +$X.XX
 ```
-- **Qué significa**: Cuánto ganaste o perdiste vs lo que invertiste
-- **Cálculo**: Valor Actual - Total Invertido
-- **Color verde**: Estás ganando 🎉
+- **Qué significa**: Ganancia/pérdida real después de descontar todas las comisiones
+- **Cálculo**: Valor Actual − Total Invertido − Total Comisiones
+- **Subtítulo**: Muestra el porcentaje neto y la ganancia bruta (sin descontar fees)
+- **Color verde**: Estás ganando (neto)
 - **Color rojo**: Estás perdiendo (temporal, es normal en DCA)
+
+### Análisis Histórico
+
+Sección con 5 tarjetas adicionales de análisis:
+
+#### 💸 Comisiones Pagadas
+```
+$X.XXX
+X.X% del capital · X transacciones
+```
+- **Qué significa**: Total de comisiones pagadas al exchange en todas las compras
+- **Cálculo**: suma de `comision_usd` de todas las filas (0.3% por transacción)
+- **Porcentaje**: Comisiones / Total Invertido × 100
 
 ### Gráfico Interactivo
 
@@ -391,13 +407,17 @@ https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd
 
 ### 2. Cálculo de la Compra
 
-**Fórmula**:
+**Fórmula** (con descuento de comisión):
 ```python
-btc_comprados = usd_invertidos / precio_btc_usd
+comision_usd = usd_invertidos * COMISION_PORCENTAJE   # 0.3%
+btc_comprados = (usd_invertidos - comision_usd) / precio_btc_usd
 
 # Ejemplo:
-# $2 USD / $69,784 = 0.00002866 BTC
+# comision = $2.00 × 0.003 = $0.006
+# btc_comprados = $1.994 / $69,784 = 0.00002857 BTC (neto real)
 ```
+
+> **Nota**: El BTC acumulado refleja lo que realmente recibís luego de pagar la comisión del exchange, no el monto bruto invertido.
 
 **Formato de números**:
 - BTC se guarda con 8 decimales (precisión de satoshi)
@@ -409,7 +429,8 @@ btc_comprados = usd_invertidos / precio_btc_usd
 
 | Variable | Descripción | Cálculo |
 |----------|-------------|---------|
-| `btc_comprados` | BTC comprado HOY | $2 / precio_btc |
+| `comision_usd` | Comisión pagada HOY | $2 × 0.003 = $0.006 |
+| `btc_comprados` | BTC comprado HOY (neto) | ($2 − comisión) / precio_btc |
 | `btc_acumulado` | BTC total hasta hoy | suma de todos los `btc_comprados` |
 | `usd_invertidos` | USD invertido HOY | Siempre $2 |
 | `total_invertido` | USD total hasta hoy | días × $2 |
@@ -420,19 +441,22 @@ btc_comprados = usd_invertidos / precio_btc_usd
 **Formato del archivo `btc_purchases.csv`**:
 
 ```csv
-fecha,precio_btc_usd,usd_invertidos,btc_comprados,btc_acumulado,valor_actual_usd
-2026-02-14,69784.00,2.00,0.00002866,0.00002866,2.00
-2026-02-15,70000.00,2.00,0.00002857,0.00005723,4.01
-2026-02-16,68500.00,2.00,0.00002920,0.00008643,5.92
+fecha,precio_btc_usd,usd_invertidos,btc_comprados,btc_acumulado,valor_actual_usd,comision_usd
+2026-02-14,69784.00,2.00,0.00002857,0.00002857,1.994,0.006
+2026-02-15,70000.00,2.00,0.00002849,0.00005706,3.994,0.006
+2026-02-16,68500.00,2.00,0.00002912,0.00008618,5.903,0.006
 ```
 
 **Columnas**:
 - `fecha`: YYYY-MM-DD
 - `precio_btc_usd`: Precio de 1 BTC en USD ese día
-- `usd_invertidos`: Siempre 2.00
-- `btc_comprados`: BTC comprado ese día (8 decimales)
-- `btc_acumulado`: BTC total hasta ese día (running sum)
+- `usd_invertidos`: Siempre 2.00 (monto bruto)
+- `btc_comprados`: BTC comprado ese día **neto de comisión** (8 decimales)
+- `btc_acumulado`: BTC total hasta ese día (running sum, neto)
 - `valor_actual_usd`: btc_acumulado × precio del DÍA (no de hoy)
+- `comision_usd`: Comisión pagada ese día ($2 × 0.3% = $0.006)
+
+> **Migración**: El script detecta automáticamente si el CSV no tiene la columna `comision_usd` y la agrega con los valores correctos para todo el historial.
 
 ### 5. Generación del Dashboard
 
@@ -586,11 +610,11 @@ tail -50 /Users/diodice/BTC/logs/btc_tracker_*.log
 #### Ejemplo de Datos Reales
 
 ```csv
-fecha,precio_btc_usd,usd_invertidos,btc_comprados,btc_acumulado,valor_actual_usd
-2026-02-14,69784.00,2.00,0.00002866,0.00002866,2.00
-2026-02-15,70500.00,2.00,0.00002837,0.00005703,4.02
-2026-02-16,68200.00,2.00,0.00002933,0.00008636,5.89
-2026-02-17,71000.00,2.00,0.00002817,0.00011453,8.13
+fecha,precio_btc_usd,usd_invertidos,btc_comprados,btc_acumulado,valor_actual_usd,comision_usd
+2026-02-14,69784.00,2.00,0.00002857,0.00002857,1.994,0.006
+2026-02-15,70500.00,2.00,0.00002829,0.00005686,4.008,0.006
+2026-02-16,68200.00,2.00,0.00002924,0.00008610,5.872,0.006
+2026-02-17,71000.00,2.00,0.00002808,0.00011418,8.107,0.006
 ```
 
 #### Análisis Línea por Línea
@@ -1106,10 +1130,23 @@ Esto genera un archivo con toda la info de diagnóstico.
 ## 📅 Información del Proyecto
 
 - **Fecha de inicio**: 14 de febrero de 2026
-- **Versión**: 1.0
+- **Versión**: 1.1 (comisiones agregadas marzo 2026)
 - **Lenguaje**: Python 3.9+
 - **Plataforma**: macOS (Darwin)
 - **Licencia**: Uso personal educativo
+
+### Changelog
+
+#### v1.1 (marzo 2026) - Comisiones
+- Agregada columna `comision_usd` al CSV (0.3% por transacción)
+- Corregido `btc_comprados` para reflejar BTC neto real (descontando comisión)
+- Dashboard actualizado: fees visible en "Total Invertido", ganancia neta con fees, nueva tarjeta "Comisiones Pagadas"
+- Migración automática para CSVs existentes sin la columna de comisión
+
+#### v1.0 (febrero 2026) - Inicial
+- Tracker DCA con compra diaria de $2 USD
+- Dashboard con Chart.js
+- Automatización via launchd a las 9 AM
 
 ---
 
@@ -1193,4 +1230,4 @@ Después de usar este tracker por unos meses, deberías poder:
 
 **¡Feliz tracking! 📊₿**
 
-*Última actualización: 14 de febrero de 2026*
+*Última actualización: 7 de marzo de 2026*

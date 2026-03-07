@@ -13,6 +13,7 @@ import sys
 
 # Configuración de rutas
 BASE_DIR = Path(__file__).parent.parent
+COMISION_PORCENTAJE = 0.003  # 0.3% por transacción (compra)
 CSV_FILE = BASE_DIR / "data" / "btc_purchases.csv"
 DASHBOARD_FILE = BASE_DIR / "index.html"
 LOG_DIR = BASE_DIR / "logs"
@@ -76,14 +77,20 @@ def update_btc_data():
 
         # Paso 2: Calcular compra del día
         usd_invertidos = 2.00
-        btc_comprados = usd_invertidos / precio_btc
-        log_message(f"Compra del día: ${usd_invertidos:.2f} = {btc_comprados:.8f} BTC")
+        comision_usd = usd_invertidos * COMISION_PORCENTAJE
+        btc_comprados = (usd_invertidos - comision_usd) / precio_btc
+        log_message(f"Compra del día: ${usd_invertidos:.2f} = {btc_comprados:.8f} BTC · Comisión: ${comision_usd:.4f}")
 
         # Paso 3: Leer datos históricos (si existen)
         if CSV_FILE.exists():
             df = pd.read_csv(CSV_FILE)
             # Normalizar fechas a solo fecha (sin hora) para comparaciones - usar format='mixed' para manejar formatos inconsistentes
             df['fecha'] = pd.to_datetime(df['fecha'], format='mixed').dt.date
+
+            # Migrar: agregar columna de comision si no existe (compatibilidad hacia atrás)
+            if 'comision_usd' not in df.columns:
+                df['comision_usd'] = df['usd_invertidos'] * COMISION_PORCENTAJE
+                log_message("✓ Columna comision_usd migrada al CSV existente")
 
             # Contar duplicados antes de limpiar
             duplicados_antes = len(df)
@@ -127,7 +134,8 @@ def update_btc_data():
             'usd_invertidos': usd_invertidos,
             'btc_comprados': btc_comprados,
             'btc_acumulado': btc_acumulado,
-            'valor_actual_usd': valor_actual_usd
+            'valor_actual_usd': valor_actual_usd,
+            'comision_usd': comision_usd
         }
 
         # Paso 7: Guardar en CSV
@@ -160,6 +168,17 @@ def generate_dashboard(df):
     valor_actual = df['valor_actual_usd'].iloc[-1]
     ganancia = valor_actual - total_invertido
     porcentaje = (ganancia / total_invertido) * 100 if total_invertido > 0 else 0
+
+    # ===== COMISIONES =====
+    if 'comision_usd' in df.columns:
+        total_comisiones = df['comision_usd'].sum()
+    else:
+        total_comisiones = total_invertido * COMISION_PORCENTAJE
+    pct_comisiones = (total_comisiones / total_invertido) * 100 if total_invertido > 0 else 0
+    ganancia_neta = ganancia - total_comisiones
+    porcentaje_neto = (ganancia_neta / total_invertido) * 100 if total_invertido > 0 else 0
+    color_ganancia_neta = "#10b981" if ganancia_neta >= 0 else "#ef4444"
+    simbolo_neto = "+" if ganancia_neta >= 0 else ""
 
     # ===== MEJORA 1: PRECIO PROMEDIO DE COMPRA =====
     precio_promedio = total_invertido / btc_total if btc_total > 0 else 0
@@ -735,7 +754,7 @@ def generate_dashboard(df):
             <div class="metric-card">
                 <div class="metric-label">💵 Total Invertido</div>
                 <div class="metric-value">${total_invertido:.2f}</div>
-                <div class="metric-subtitle">{total_dias} día{'s' if total_dias != 1 else ''} × $2 USD</div>
+                <div class="metric-subtitle">{total_dias} día{'s' if total_dias != 1 else ''} × $2 USD · Fees: ${total_comisiones:.3f}</div>
             </div>
 
             <div class="metric-card">
@@ -753,9 +772,9 @@ def generate_dashboard(df):
             </div>
 
             <div class="metric-card">
-                <div class="metric-label">{emoji_tendencia} Ganancia/Pérdida</div>
-                <div class="metric-value" style="color: {color_ganancia}">{simbolo}${ganancia:.2f}</div>
-                <div class="metric-subtitle" style="color: {color_ganancia}">{simbolo}{porcentaje:.2f}%</div>
+                <div class="metric-label">{emoji_tendencia} Ganancia Real (con fees)</div>
+                <div class="metric-value" style="color: {color_ganancia_neta}">{simbolo_neto}${ganancia_neta:.2f}</div>
+                <div class="metric-subtitle" style="color: {color_ganancia_neta}">{simbolo_neto}{porcentaje_neto:.2f}% · Bruta: {simbolo}${ganancia:.2f}</div>
             </div>
         </div>
 
@@ -786,6 +805,12 @@ def generate_dashboard(df):
                 <div class="metric-label">🔥 Racha Consecutiva</div>
                 <div class="metric-value">{racha_formato}</div>
                 <div class="metric-subtitle">{racha_dias} día{'s' if racha_dias != 1 else ''} totales</div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-label">💸 Comisiones Pagadas</div>
+                <div class="metric-value">${total_comisiones:.3f}</div>
+                <div class="metric-subtitle">{pct_comisiones:.1f}% del capital · {total_dias} transacción{'es' if total_dias != 1 else ''}</div>
             </div>
         </div>
 
@@ -911,7 +936,7 @@ def generate_dashboard(df):
                     }}
                 }},
                 legend: {{
-                    data: ['💵 USD Invertidos', '₿ Valor en BTC'],
+                    data: ['💵 USD Invertidos', '₿ Valor de Bitcoins'],
                     top: 10,
                     textStyle: {{ fontSize: 13 }}
                 }},
@@ -964,7 +989,7 @@ def generate_dashboard(df):
                         emphasis: {{ focus: 'series' }}
                     }},
                     {{
-                        name: '₿ Valor en BTC',
+                        name: '₿ Valor de Bitcoins',
                         type: 'line',
                         data: dataValorBTC,
                         smooth: true,
