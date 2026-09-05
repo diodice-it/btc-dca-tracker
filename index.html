@@ -1,873 +1,502 @@
 <!DOCTYPE html>
 <html lang="es" data-theme="dark">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
-    <title>📊 Bitcoin DCA Tracker</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;800&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
-    <style>
-        :root {
-            --bg-gradient-start: #667eea;
-            --bg-gradient-end: #764ba2;
-            --card-bg: rgba(255, 255, 255, 0.95);
-            --card-border: rgba(255, 255, 255, 0.3);
-            --text-primary: #1f2937;
-            --text-secondary: #6b7280;
-            --text-tertiary: #9ca3af;
-            --shadow: rgba(0, 0, 0, 0.1);
-            --shadow-hover: rgba(0, 0, 0, 0.2);
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Bitcoin DCA Tracker</title>
+<meta name="description" content="Seguimiento diario de una estrategia DCA en Bitcoin: 203 días, $406.00 invertidos, resultado +$59.59.">
+<meta name="color-scheme" content="dark light">
+<meta name="theme-color" content="#0d1117" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f4f6fa" media="(prefers-color-scheme: light)">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta property="og:title" content="Bitcoin DCA Tracker">
+<meta property="og:description" content="203 días de DCA · $406.00 invertidos · +$59.59 (+14.68%)">
+<meta property="og:type" content="website">
+<script>
+  // Aplica el tema guardado antes del primer pintado para evitar el flash
+  (function(){
+    try{
+      var t = localStorage.getItem('theme');
+      if(t) document.documentElement.setAttribute('data-theme', t);
+    }catch(e){}
+  })();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f4f6fa; --surface:#ffffff; --surface-2:#eef1f7;
+  --line:#dde2ec; --line-soft:#e7ebf2;
+  --txt:#131824; --txt-2:#5b6779; --txt-3:#8b97a8;
+  --btc:#e07c0a; --pos:#18794e; --neg:#c93c37; --accent:#4257b2;
+  --pos-bg:rgba(24,121,78,.10); --neg-bg:rgba(201,60,55,.10);
+  --shadow:0 1px 2px rgba(16,24,40,.05),0 4px 12px rgba(16,24,40,.05);
+}
+[data-theme="dark"]{
+  --bg:#0d1117; --surface:#161b22; --surface-2:#1c2230;
+  --line:#2a3140; --line-soft:#222835;
+  --txt:#e6edf3; --txt-2:#9aa7b8; --txt-3:#6b7889;
+  --btc:#f7931a; --pos:#3fb950; --neg:#f85149; --accent:#6e8ef7;
+  --pos-bg:rgba(63,185,80,.13); --neg-bg:rgba(248,81,73,.13);
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 14px rgba(0,0,0,.2);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{
+  background:var(--bg);color:var(--txt);
+  font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  line-height:1.5;padding:28px 20px 40px;min-height:100vh;
+  font-feature-settings:'tnum' 1;
+}
+.wrap{max-width:1240px;margin:0 auto}
+.mono{font-family:'JetBrains Mono','SF Mono',Monaco,Consolas,monospace}
 
-        [data-theme="dark"] {
-            --bg-gradient-start: #1a1a2e;
-            --bg-gradient-end: #16213e;
-            --card-bg: rgba(30, 30, 46, 0.8);
-            --card-border: rgba(255, 255, 255, 0.1);
-            --text-primary: #f3f4f6;
-            --text-secondary: #d1d5db;
-            --text-tertiary: #9ca3af;
-            --shadow: rgba(0, 0, 0, 0.3);
-            --shadow-hover: rgba(0, 0, 0, 0.5);
-        }
+/* ---- header ---- */
+.head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:30px}
+.head h1{font-size:1.6rem;font-weight:700;letter-spacing:-.025em;display:flex;align-items:center;gap:9px}
+.head h1 .b{color:var(--btc)}
+.head .meta{margin-top:5px;font-size:.83rem;color:var(--txt-2);display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.theme-toggle{
+  flex:none;width:40px;height:40px;border-radius:10px;cursor:pointer;
+  background:var(--surface);border:1px solid var(--line);
+  display:flex;align-items:center;justify-content:center;
+  transition:border-color .2s,transform .2s;
+}
+.theme-toggle:hover{border-color:var(--txt-3);transform:translateY(-1px)}
+.theme-toggle svg{width:18px;height:18px;fill:none;stroke:var(--txt-2);stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;pointer-events:none}
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+/* ---- primitivas ---- */
+.sec{font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txt-3);margin:30px 0 12px;display:flex;align-items:center;gap:10px}
+.sec::after{content:"";flex:1;height:1px;background:var(--line-soft)}
+.dot{width:3px;height:3px;border-radius:50%;background:var(--txt-3);flex:none}
+.pill{
+  font-family:'JetBrains Mono','SF Mono',Monaco,monospace;font-size:.92rem;font-weight:700;
+  padding:4px 10px;border-radius:8px;white-space:nowrap;
+  background:var(--pos-bg);color:var(--pos);border:1px solid transparent;
+}
+.pill.neg{background:var(--neg-bg);color:var(--neg)}
+.pill.sm{font-size:.76rem;padding:2px 7px}
 
-        /* Mejoras para experiencia táctil en mobile */
-        * {
-            -webkit-tap-highlight-color: transparent;
-            -webkit-touch-callout: none;
-        }
+/* ---- hero ---- */
+.hero{
+  background:var(--surface);border:1px solid var(--line);border-radius:16px;
+  padding:26px 28px;box-shadow:var(--shadow);
+  display:grid;grid-template-columns:1.15fr 1fr;gap:32px;
+}
+.hero .lbl{font-size:.72rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--txt-3);margin-bottom:10px}
+.pnl{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+.pnl .big{font-size:3rem;font-weight:700;letter-spacing:-.03em;line-height:1}
+.hero-meta{margin-top:15px;display:flex;gap:9px;align-items:center;flex-wrap:wrap;font-size:.82rem;color:var(--txt-2)}
+.bar{margin-top:20px;height:8px;border-radius:6px;background:var(--surface-2);overflow:hidden;display:flex}
+.bar i{display:block;height:100%}
+.barleg{display:flex;gap:18px;margin-top:9px;font-size:.75rem;color:var(--txt-2);flex-wrap:wrap}
+.barleg span{display:flex;align-items:center;gap:6px}
+.sw{width:9px;height:9px;border-radius:3px;flex:none}
+.hero-r{border-left:1px solid var(--line);padding-left:32px;display:flex;flex-direction:column;justify-content:center;gap:13px}
+.kv{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.kv .k{font-size:.82rem;color:var(--txt-2)}
+.kv .v{font-size:1.05rem;font-weight:600;display:flex;align-items:baseline;gap:7px}
+.kv .v.btc{color:var(--btc)}
 
-        html {
-            -webkit-text-size-adjust: 100%;
-            text-size-adjust: 100%;
-        }
+/* ---- cards ---- */
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.card{
+  background:var(--surface);border:1px solid var(--line-soft);border-radius:12px;
+  padding:16px 18px;box-shadow:var(--shadow);
+  transition:border-color .2s,transform .2s;
+}
+.card:hover{border-color:var(--line);transform:translateY(-2px)}
+.card .top{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.card svg{width:14px;height:14px;stroke:var(--txt-3);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.card .lb{font-size:.68rem;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--txt-3)}
+.card .val{font-size:1.45rem;font-weight:600;letter-spacing:-.015em;line-height:1.15}
+.card .val .of{font-size:.85rem;color:var(--txt-3);font-weight:400}
+.card .val.o{color:var(--btc)}
+.card .val.pos{color:var(--pos)}
+.card .val.neg{color:var(--neg)}
+.card .sub{font-size:.75rem;color:var(--txt-2);margin-top:6px}
+.card .sub b{color:var(--txt);font-weight:600}
 
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
-            background-attachment: fixed;
-            min-height: 100vh;
-            padding: 20px;
-            transition: background 0.3s ease;
-            animation: gradientShift 15s ease infinite;
-            background-size: 200% 200%;
-        }
+/* ---- charts ---- */
+.panel{
+  background:var(--surface);border:1px solid var(--line);border-radius:14px;
+  padding:20px 22px 14px;box-shadow:var(--shadow);margin-bottom:14px;
+}
+.panel h2{font-size:.95rem;font-weight:600;letter-spacing:-.01em;margin-bottom:2px}
+.panel .hint{font-size:.78rem;color:var(--txt-3);margin-bottom:12px}
+.chart{width:100%;height:340px}
 
-        @keyframes gradientShift {
-            0%, 100% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-        }
+footer{margin-top:34px;padding-top:20px;border-top:1px solid var(--line-soft);text-align:center;font-size:.78rem;color:var(--txt-3)}
+footer a{color:var(--txt-2)}
 
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-        }
-
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            animation: fadeInUp 0.6s ease;
-        }
-
-        .header {
-            text-align: center;
-            color: white;
-            margin-bottom: 40px;
-            position: relative;
-        }
-
-        .header h1 {
-            font-size: 3em;
-            margin-bottom: 10px;
-            font-weight: 700;
-            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-            animation: fadeInUp 0.6s ease 0.1s both;
-        }
-
-        .header p {
-            opacity: 0.95;
-            font-size: 1.1em;
-            font-weight: 400;
-            animation: fadeInUp 0.6s ease 0.2s both;
-        }
-
-        /* MODO OSCURO - Toggle (Icono SVG minimalista) */
-        .theme-toggle {
-            position: absolute;
-            top: 0;
-            right: 0;
-            background: var(--card-bg);
-            border: 1px solid var(--card-border);
-            backdrop-filter: blur(10px);
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            cursor: pointer;
-            box-shadow: 0 4px 12px var(--shadow);
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-        }
-
-        .theme-toggle:hover {
-            transform: translateY(-2px) rotate(20deg);
-            box-shadow: 0 6px 16px var(--shadow-hover);
-        }
-
-        .theme-toggle svg {
-            width: 24px;
-            height: 24px;
-            fill: none;
-            stroke: var(--text-primary);
-            stroke-width: 2;
-            stroke-linecap: round;
-            stroke-linejoin: round;
-            transition: all 0.3s ease;
-            pointer-events: none;
-        }
-
-        .theme-toggle-text {
-            display: none;
-        }
-
-        /* Métricas Grid - Estilo compacto con bordes de color */
-        .metrics-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-            gap: 14px;
-            margin-bottom: 30px;
-        }
-
-        /* Cards con borde de color y separador */
-        .metric-card {
-            background: var(--card-bg);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border-left: 4px solid #667eea;
-            padding: 18px 22px;
-            border-radius: 12px;
-            box-shadow: 0 4px 16px var(--shadow);
-            transition: all 0.3s ease;
-            position: relative;
-            animation: fadeInUp 0.6s ease both;
-            display: flex;
-            flex-direction: column;
-        }
-
-        /* Colores de borde por card */
-        .metric-card:nth-child(1) {
-            animation-delay: 0.1s;
-            border-left-color: #667eea;
-        }
-        .metric-card:nth-child(2) {
-            animation-delay: 0.15s;
-            border-left-color: #f7931a;
-        }
-        .metric-card:nth-child(3) {
-            animation-delay: 0.2s;
-            border-left-color: #10b981;
-        }
-        .metric-card:nth-child(4) {
-            animation-delay: 0.25s;
-            border-left-color: #ef4444;
-        }
-        .metric-card:nth-child(5) {
-            animation-delay: 0.3s;
-            border-left-color: #8b5cf6;
-        }
-        .metric-card:nth-child(6) {
-            animation-delay: 0.35s;
-            border-left-color: #06b6d4;
-        }
-        .metric-card:nth-child(7) {
-            animation-delay: 0.4s;
-            border-left-color: #f59e0b;
-        }
-        .metric-card:nth-child(8) {
-            animation-delay: 0.45s;
-            border-left-color: #ec4899;
-        }
-
-        .metric-card:hover {
-            transform: translateX(4px) translateY(-2px);
-            box-shadow: 0 8px 24px var(--shadow-hover);
-        }
-
-        /* Label con separador (border-bottom) */
-        .metric-label {
-            font-size: 0.7em;
-            color: var(--text-tertiary);
-            margin-bottom: 12px;
-            padding-bottom: 10px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.8px;
-            border-bottom: 1px solid var(--card-border);
-        }
-
-        /* Tipografía monoespaciada para valores */
-        .metric-value {
-            font-size: 2em;
-            font-weight: 800;
-            color: var(--text-primary);
-            margin: 8px 0 6px 0;
-            line-height: 1.1;
-            font-family: 'JetBrains Mono', 'SF Mono', 'Monaco', 'Consolas', monospace;
-        }
-
-        .metric-subtitle {
-            font-size: 0.75em;
-            color: var(--text-secondary);
-            font-weight: 500;
-        }
-
-        /* Títulos de secciones */
-        .section-title {
-            color: white;
-            font-size: 1.8em;
-            font-weight: 600;
-            margin: 40px 0 20px 0;
-            text-align: left;
-            opacity: 0.95;
-            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-        }
-
-        /* Secciones de información */
-        .info-section {
-            background: var(--card-bg);
-            backdrop-filter: blur(10px);
-            border-left: 4px solid #667eea;
-            padding: 28px 32px;
-            border-radius: 12px;
-            box-shadow: 0 4px 16px var(--shadow);
-            margin-bottom: 20px;
-            animation: fadeInUp 0.6s ease 0.4s both;
-            transition: all 0.3s ease;
-        }
-
-        .info-section:hover {
-            transform: translateX(4px) translateY(-2px);
-            box-shadow: 0 8px 24px var(--shadow-hover);
-        }
-
-        .info-section:nth-of-type(1) {
-            border-left-color: #8b5cf6;
-        }
-
-        .info-section:nth-of-type(2) {
-            border-left-color: #10b981;
-        }
-
-        .info-section h2 {
-            margin-bottom: 24px;
-            padding-bottom: 12px;
-            border-bottom: 1px solid var(--card-border);
-            color: var(--text-primary);
-            font-weight: 600;
-            font-size: 1.4em;
-        }
-
-
-        /* Gráficos */
-        .chart-container {
-            position: relative;
-            height: 400px;
-            margin-bottom: 30px;
-        }
-
-        footer {
-            text-align: center;
-            color: white;
-            opacity: 0.9;
-            margin-top: 40px;
-            padding: 24px;
-            font-weight: 400;
-            animation: fadeInUp 0.6s ease 0.5s both;
-        }
-
-        /* ===== MOBILE RESPONSIVE - MEJORES PRÁCTICAS ===== */
-
-        /* Tablet y pantallas medianas */
-        @media (max-width: 1024px) {
-            body {
-                padding: 15px;
-            }
-
-            .metrics-grid {
-                grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-                gap: 12px;
-            }
-
-            .section-title {
-                font-size: 1.5em;
-                margin: 30px 0 15px 0;
-            }
-        }
-
-        /* Mobile */
-        @media (max-width: 768px) {
-            body {
-                padding: 12px;
-            }
-
-            /* Header optimizado para mobile */
-            .header {
-                margin-bottom: 30px;
-                padding-right: 55px;
-            }
-
-            .header h1 {
-                font-size: 1.75em;
-                margin-bottom: 8px;
-                line-height: 1.2;
-            }
-
-            /* Botón dark mode - tamaño táctil óptimo */
-            .theme-toggle {
-                width: 44px;
-                height: 44px;
-                top: 0;
-                right: 0;
-            }
-
-            .theme-toggle svg {
-                width: 20px;
-                height: 20px;
-            }
-
-            /* Grid de 2 columnas en mobile */
-            .metrics-grid {
-                grid-template-columns: repeat(2, 1fr);
-                gap: 10px;
-                margin-bottom: 20px;
-            }
-
-            /* Cards optimizadas para 2 columnas en mobile */
-            .metric-card {
-                padding: 14px 12px;
-                border-radius: 10px;
-                border-left-width: 3px;
-            }
-
-            .metric-label {
-                font-size: 0.6em;
-                margin-bottom: 8px;
-                padding-bottom: 6px;
-                letter-spacing: 0.5px;
-            }
-
-            .metric-value {
-                font-size: 1.4em;
-                margin: 5px 0 4px 0;
-            }
-
-            .metric-subtitle {
-                font-size: 0.65em;
-                line-height: 1.3;
-            }
-
-            /* Section titles más compactos */
-            .section-title {
-                font-size: 1.3em;
-                margin: 25px 0 12px 0;
-            }
-
-            /* Info sections optimizadas */
-            .info-section {
-                padding: 18px 20px;
-                border-radius: 10px;
-                margin-bottom: 16px;
-            }
-
-            .info-section h2 {
-                font-size: 1.2em;
-                margin-bottom: 18px;
-                padding-bottom: 10px;
-            }
-
-            /* Gráficos responsivos */
-            .chart-container {
-                height: 280px;
-                margin-bottom: 20px;
-            }
-
-            /* Footer */
-            footer {
-                margin-top: 30px;
-                padding: 20px;
-                font-size: 0.85em;
-            }
-        }
-
-        /* Mobile pequeño (iPhone SE, etc) */
-        @media (max-width: 375px) {
-            body {
-                padding: 10px;
-            }
-
-            .header {
-                padding-right: 50px;
-            }
-
-            .header h1 {
-                font-size: 1.5em;
-            }
-
-            .theme-toggle {
-                width: 40px;
-                height: 40px;
-                top: 0;
-            }
-
-            .theme-toggle svg {
-                width: 18px;
-                height: 18px;
-            }
-
-            .metric-card {
-                padding: 14px 16px;
-            }
-
-            .metric-value {
-                font-size: 1.4em;
-            }
-
-            .section-title {
-                font-size: 1.2em;
-            }
-
-            .info-section {
-                padding: 16px 18px;
-            }
-
-            .chart-container {
-                height: 240px;
-            }
-        }
-    </style>
+/* ---- responsive ---- */
+@media(max-width:1000px){
+  .hero{grid-template-columns:1fr;gap:22px;padding:22px}
+  .hero-r{border-left:none;border-top:1px solid var(--line);padding-left:0;padding-top:20px}
+  .grid{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:640px){
+  body{padding:18px 14px 30px}
+  .head h1{font-size:1.25rem}
+  .pnl .big{font-size:2.3rem}
+  .card .val{font-size:1.25rem}
+  .chart{height:280px}
+  .panel{padding:16px 14px 10px}
+}
+@media(max-width:380px){
+  .grid{grid-template-columns:1fr}
+}
+@media(prefers-reduced-motion:reduce){
+  *{transition:none!important;animation:none!important}
+}
+</style>
 </head>
 <body>
-    <div class="container">
-        <!-- Header -->
-        <div class="header">
-            <!-- Toggle de Modo Oscuro -->
-            <div class="theme-toggle" onclick="toggleTheme()">
-                <svg id="theme-icon" viewBox="0 0 24 24">
-                    <!-- Sol (modo dark) -->
-                    <g class="sun-icon">
-                        <circle cx="12" cy="12" r="4"/>
-                        <line x1="12" y1="1" x2="12" y2="3"/>
-                        <line x1="12" y1="21" x2="12" y2="23"/>
-                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
-                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-                        <line x1="1" y1="12" x2="3" y2="12"/>
-                        <line x1="21" y1="12" x2="23" y2="12"/>
-                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
-                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-                    </g>
-                    <!-- Luna (modo light) -->
-                    <path class="moon-icon" d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" style="visibility: hidden;"/>
-                </svg>
-            </div>
+<div class="wrap">
 
-            <h1>₿ Bitcoin DCA Tracker</h1>
-        </div>
-
-        <!-- Sección 1: Tu Inversión Actual -->
-        <h2 class="section-title">💰 Tu Inversión Actual</h2>
-        <div class="metrics-grid">
-            <div class="metric-card">
-                <div class="metric-label">💵 Total Invertido</div>
-                <div class="metric-value">$406.00</div>
-                <div class="metric-subtitle">203 días × $2 USD · Fees: $1.218</div>
-            </div>
-
-            <div class="metric-card">
-                <div class="metric-label">₿ BTC Acumulado</div>
-                <div class="metric-value">0.00586990</div>
-                <div class="metric-subtitle">Satoshis: 586,989</div>
-            </div>
-
-            <div class="metric-card">
-                <div class="metric-label">📈 Valor Actual</div>
-                <div class="metric-value">
-                    $465.59
-                </div>
-                <div class="metric-subtitle">BTC @ $79,318.00</div>
-            </div>
-
-            <div class="metric-card">
-                <div class="metric-label">📈 Ganancia Real (con fees)</div>
-                <div class="metric-value" style="color: #10b981">+$58.37</div>
-                <div class="metric-subtitle" style="color: #10b981">+14.38% · Bruta: +$59.59</div>
-            </div>
-        </div>
-
-        <!-- Sección 2: Análisis Histórico -->
-        <h2 class="section-title">📊 Análisis Histórico</h2>
-        <div class="metrics-grid">
-            <div class="metric-card">
-                <div class="metric-label">📊 Precio Promedio</div>
-                <div class="metric-value">$69,166.43</div>
-                <div class="metric-subtitle">
-                    +14.7% vs actual
-                </div>
-            </div>
-
-            <div class="metric-card">
-                <div class="metric-label">🏆 Mejor Día de Compra</div>
-                <div class="metric-value">$58,565.00</div>
-                <div class="metric-subtitle">2026-06-30 · 0.00003405 BTC</div>
-            </div>
-
-            <div class="metric-card">
-                <div class="metric-label">📉 Peor Día de Compra</div>
-                <div class="metric-value">$81,895.00</div>
-                <div class="metric-subtitle">2026-05-06 · 0.00002435 BTC</div>
-            </div>
-
-            <div class="metric-card">
-                <div class="metric-label">🔥 Racha Consecutiva</div>
-                <div class="metric-value">6 meses</div>
-                <div class="metric-subtitle">203 días totales</div>
-            </div>
-
-            <div class="metric-card">
-                <div class="metric-label">💸 Comisiones Pagadas</div>
-                <div class="metric-value">$1.218</div>
-                <div class="metric-subtitle">0.3% del capital · 203 transacciónes</div>
-            </div>
-        </div>
-
-        <!-- Primer Gráfico - Evolución del DCA -->
-        <div class="info-section">
-            <h2>📊 Evolución del DCA</h2>
-            <div class="chart-container">
-                <div id="dcaChart" style="width: 100%; height: 100%;"></div>
-            </div>
-        </div>
-
-        <!-- Segundo Gráfico - Precio de Bitcoin -->
-        <div class="info-section">
-            <h2>💹 Precio de Bitcoin en el Tiempo</h2>
-            <div class="chart-container">
-                <div id="btcPriceChart" style="width: 100%; height: 100%;"></div>
-            </div>
-        </div>
-
-        <footer>
-            <p>@ Generado automáticamente · 04/09/2026 15:28:00</p>
-        </footer>
+  <header class="head">
+    <div>
+      <h1><span class="b">&#8383;</span> Bitcoin DCA Tracker</h1>
+      <div class="meta">
+        <span>BTC <b class="mono">$79,318</b></span>
+        <span class="pill sm neg">−1.68%</span>
+        <span class="dot"></span>
+        <span>Actualizado 05/09/2026 10:28</span>
+      </div>
     </div>
+    <button class="theme-toggle" onclick="toggleTheme()" aria-label="Cambiar tema" title="Cambiar tema">
+      <svg id="theme-icon" viewBox="0 0 24 24">
+        <g class="i-sun">
+          <circle cx="12" cy="12" r="4"/>
+          <path d="M12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/>
+        </g>
+        <path class="i-moon" d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/>
+      </svg>
+    </button>
+  </header>
 
-    <script>
-        // ===== MODO OSCURO =====
-        function updateThemeIcon(theme) {
-            const svg = document.getElementById('theme-icon');
-            const sunIcon = svg.querySelector('.sun-icon');
-            const moonIcon = svg.querySelector('.moon-icon');
+  <p class="sec">Posición</p>
+  <div class="hero">
+    <div class="hero-l">
+      <div class="lbl">Resultado neto · después de comisiones</div>
+      <div class="pnl">
+        <span class="big mono" style="color:var(--pos)">+$59.59</span>
+        <span class="pill">+14.68%</span>
+      </div>
+      <div class="hero-meta">
+        <span>Últimas 24 h</span>
+        <span class="pill sm neg">−$7.91 · −1.68%</span>
+        <span class="dot"></span>
+        <span>Bruta +$60.99 · las comisiones te costaron $1.40</span>
+      </div>
+      <div class="bar">
+        <i style="background:var(--accent);width:87.2%"></i>
+        <i style="background:var(--pos);width:12.8%"></i>
+      </div>
+      <div class="barleg">
+        <span><i class="sw" style="background:var(--accent)"></i>Invertido $406.00</span>
+        <span><i class="sw" style="background:var(--pos)"></i>Resultado +$59.59</span>
+      </div>
+    </div>
+    <div class="hero-r">
+      <div class="kv"><span class="k">Valor actual</span><span class="v mono">$465.59</span></div>
+      <div class="kv"><span class="k">BTC acumulado</span><span class="v mono btc">0.00586990</span></div>
+      <div class="kv"><span class="k">Satoshis</span><span class="v mono">586,990</span></div>
+      <div class="kv"><span class="k">Precio promedio</span><span class="v mono">$69,166</span></div>
+    </div>
+  </div>
 
-            if (theme === 'dark') {
-                // Modo dark: mostrar sol (para cambiar a light)
-                sunIcon.style.visibility = 'visible';
-                moonIcon.style.visibility = 'hidden';
-            } else {
-                // Modo light: mostrar luna (para cambiar a dark)
-                sunIcon.style.visibility = 'hidden';
-                moonIcon.style.visibility = 'visible';
-            }
+  <p class="sec">Tu estrategia</p>
+  <div class="grid">
+    <div class="card">
+      <div class="top"><svg viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8"/><path d="M21 7v5h-5"/></svg><span class="lb">Precio promedio</span></div>
+      <div class="val mono">$69,166</div>
+      <div class="sub">BTC hoy está <b class="pos">14.7% arriba de</b> tu promedio</div>
+    </div>
+    <div class="card">
+      <div class="top"><svg viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg><span class="lb">Aporte diario</span></div>
+      <div class="val mono">$2.00</div>
+      <div class="sub">203 días sin interrumpir · desde 14/02/2026</div>
+    </div>
+    <div class="card">
+      <div class="top"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span class="lb">Comisiones</span></div>
+      <div class="val mono">$1.22</div>
+      <div class="sub">0.3% del capital · 203 transacciones</div>
+    </div>
+    <div class="card">
+      <div class="top"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span class="lb">DCA vs todo de una</span></div>
+      <div class="val mono pos">+$5.50</div>
+      <div class="sub">Ganás 1.2% más que comprando todo el primer día</div>
+    </div>
+  </div>
+
+  <p class="sec">Rendimiento histórico</p>
+  <div class="grid">
+    <div class="card">
+      <div class="top"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg><span class="lb">Mejor compra</span></div>
+      <div class="val mono o">$58,565</div>
+      <div class="sub">30/06/2026 · 3,405 sats por $2</div>
+    </div>
+    <div class="card">
+      <div class="top"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg><span class="lb">Peor compra</span></div>
+      <div class="val mono o">$81,895</div>
+      <div class="sub">06/05/2026 · 2,435 sats por $2</div>
+    </div>
+    <div class="card">
+      <div class="top"><svg viewBox="0 0 24 24"><path d="M3 7l5 8 4-4 4 6 5-11"/></svg><span class="lb">Caída máxima</span></div>
+      <div class="val mono neg">&minus;13.8%</div>
+      <div class="sub">Peor bajón desde un pico · 05/06/2026</div>
+    </div>
+    <div class="card">
+      <div class="top"><svg viewBox="0 0 24 24"><path d="M12 3l2.9 5.9 6.6 1-4.8 4.6 1.2 6.5L12 18l-5.9 3 1.2-6.5-4.8-4.6 6.6-1z"/></svg><span class="lb">Días en verde</span></div>
+      <div class="val mono">94 <span class="of">/ 203</span></div>
+      <div class="sub">46% del tiempo por encima de lo invertido</div>
+    </div>
+  </div>
+
+  <p class="sec">Evolución</p>
+
+  <div class="panel">
+    <h2>Invertido vs. valor del portafolio</h2>
+    <p class="hint">Arrastrá la barra inferior para acotar el período · shift + rueda para hacer zoom</p>
+    <div id="chart-dca" class="chart"></div>
+  </div>
+
+  <div class="panel">
+    <h2>Resultado acumulado</h2>
+    <p class="hint">Ganancia o pérdida sobre el total invertido hasta cada día</p>
+    <div id="chart-pnl" class="chart"></div>
+  </div>
+
+  <div class="panel">
+    <h2>Precio de Bitcoin</h2>
+    <p class="hint">La línea punteada es tu precio promedio de compra</p>
+    <div id="chart-price" class="chart"></div>
+  </div>
+
+  <footer>
+    <p>Generado automáticamente · 05/09/2026 10:28 · datos de CoinGecko</p>
+  </footer>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+<script>
+const DATA = {"labels": ["14/02", "15/02", "16/02", "17/02", "18/02", "19/02", "20/02", "21/02", "22/02", "23/02", "24/02", "25/02", "26/02", "27/02", "28/02", "01/03", "02/03", "03/03", "04/03", "05/03", "06/03", "07/03", "08/03", "09/03", "10/03", "11/03", "12/03", "13/03", "14/03", "15/03", "16/03", "17/03", "18/03", "19/03", "20/03", "21/03", "22/03", "23/03", "24/03", "25/03", "26/03", "27/03", "28/03", "29/03", "30/03", "31/03", "01/04", "02/04", "03/04", "04/04", "05/04", "06/04", "07/04", "08/04", "09/04", "10/04", "11/04", "12/04", "13/04", "14/04", "15/04", "16/04", "17/04", "18/04", "19/04", "20/04", "21/04", "22/04", "23/04", "24/04", "25/04", "26/04", "27/04", "28/04", "29/04", "30/04", "01/05", "02/05", "03/05", "04/05", "05/05", "06/05", "07/05", "08/05", "09/05", "10/05", "11/05", "12/05", "13/05", "14/05", "15/05", "16/05", "17/05", "18/05", "19/05", "20/05", "21/05", "22/05", "23/05", "24/05", "25/05", "26/05", "27/05", "28/05", "29/05", "30/05", "31/05", "01/06", "02/06", "03/06", "04/06", "05/06", "06/06", "07/06", "08/06", "09/06", "10/06", "11/06", "12/06", "13/06", "14/06", "15/06", "16/06", "17/06", "18/06", "19/06", "20/06", "21/06", "22/06", "23/06", "24/06", "25/06", "26/06", "27/06", "28/06", "29/06", "30/06", "01/07", "02/07", "03/07", "04/07", "05/07", "06/07", "07/07", "08/07", "09/07", "10/07", "11/07", "12/07", "13/07", "14/07", "15/07", "16/07", "17/07", "18/07", "19/07", "20/07", "21/07", "22/07", "23/07", "24/07", "25/07", "26/07", "27/07", "28/07", "29/07", "30/07", "31/07", "01/08", "02/08", "03/08", "04/08", "05/08", "06/08", "07/08", "08/08", "09/08", "10/08", "11/08", "12/08", "13/08", "14/08", "15/08", "16/08", "17/08", "18/08", "19/08", "20/08", "21/08", "22/08", "23/08", "24/08", "25/08", "26/08", "27/08", "28/08", "29/08", "30/08", "31/08", "01/09", "02/09", "03/09", "04/09"], "fechas": ["14/02/2026", "15/02/2026", "16/02/2026", "17/02/2026", "18/02/2026", "19/02/2026", "20/02/2026", "21/02/2026", "22/02/2026", "23/02/2026", "24/02/2026", "25/02/2026", "26/02/2026", "27/02/2026", "28/02/2026", "01/03/2026", "02/03/2026", "03/03/2026", "04/03/2026", "05/03/2026", "06/03/2026", "07/03/2026", "08/03/2026", "09/03/2026", "10/03/2026", "11/03/2026", "12/03/2026", "13/03/2026", "14/03/2026", "15/03/2026", "16/03/2026", "17/03/2026", "18/03/2026", "19/03/2026", "20/03/2026", "21/03/2026", "22/03/2026", "23/03/2026", "24/03/2026", "25/03/2026", "26/03/2026", "27/03/2026", "28/03/2026", "29/03/2026", "30/03/2026", "31/03/2026", "01/04/2026", "02/04/2026", "03/04/2026", "04/04/2026", "05/04/2026", "06/04/2026", "07/04/2026", "08/04/2026", "09/04/2026", "10/04/2026", "11/04/2026", "12/04/2026", "13/04/2026", "14/04/2026", "15/04/2026", "16/04/2026", "17/04/2026", "18/04/2026", "19/04/2026", "20/04/2026", "21/04/2026", "22/04/2026", "23/04/2026", "24/04/2026", "25/04/2026", "26/04/2026", "27/04/2026", "28/04/2026", "29/04/2026", "30/04/2026", "01/05/2026", "02/05/2026", "03/05/2026", "04/05/2026", "05/05/2026", "06/05/2026", "07/05/2026", "08/05/2026", "09/05/2026", "10/05/2026", "11/05/2026", "12/05/2026", "13/05/2026", "14/05/2026", "15/05/2026", "16/05/2026", "17/05/2026", "18/05/2026", "19/05/2026", "20/05/2026", "21/05/2026", "22/05/2026", "23/05/2026", "24/05/2026", "25/05/2026", "26/05/2026", "27/05/2026", "28/05/2026", "29/05/2026", "30/05/2026", "31/05/2026", "01/06/2026", "02/06/2026", "03/06/2026", "04/06/2026", "05/06/2026", "06/06/2026", "07/06/2026", "08/06/2026", "09/06/2026", "10/06/2026", "11/06/2026", "12/06/2026", "13/06/2026", "14/06/2026", "15/06/2026", "16/06/2026", "17/06/2026", "18/06/2026", "19/06/2026", "20/06/2026", "21/06/2026", "22/06/2026", "23/06/2026", "24/06/2026", "25/06/2026", "26/06/2026", "27/06/2026", "28/06/2026", "29/06/2026", "30/06/2026", "01/07/2026", "02/07/2026", "03/07/2026", "04/07/2026", "05/07/2026", "06/07/2026", "07/07/2026", "08/07/2026", "09/07/2026", "10/07/2026", "11/07/2026", "12/07/2026", "13/07/2026", "14/07/2026", "15/07/2026", "16/07/2026", "17/07/2026", "18/07/2026", "19/07/2026", "20/07/2026", "21/07/2026", "22/07/2026", "23/07/2026", "24/07/2026", "25/07/2026", "26/07/2026", "27/07/2026", "28/07/2026", "29/07/2026", "30/07/2026", "31/07/2026", "01/08/2026", "02/08/2026", "03/08/2026", "04/08/2026", "05/08/2026", "06/08/2026", "07/08/2026", "08/08/2026", "09/08/2026", "10/08/2026", "11/08/2026", "12/08/2026", "13/08/2026", "14/08/2026", "15/08/2026", "16/08/2026", "17/08/2026", "18/08/2026", "19/08/2026", "20/08/2026", "21/08/2026", "22/08/2026", "23/08/2026", "24/08/2026", "25/08/2026", "26/08/2026", "27/08/2026", "28/08/2026", "29/08/2026", "30/08/2026", "31/08/2026", "01/09/2026", "02/09/2026", "03/09/2026", "04/09/2026"], "invertido": [2.0, 4.0, 6.0, 8.0, 10.0, 12.0, 14.0, 16.0, 18.0, 20.0, 22.0, 24.0, 26.0, 28.0, 30.0, 32.0, 34.0, 36.0, 38.0, 40.0, 42.0, 44.0, 46.0, 48.0, 50.0, 52.0, 54.0, 56.0, 58.0, 60.0, 62.0, 64.0, 66.0, 68.0, 70.0, 72.0, 74.0, 76.0, 78.0, 80.0, 82.0, 84.0, 86.0, 88.0, 90.0, 92.0, 94.0, 96.0, 98.0, 100.0, 102.0, 104.0, 106.0, 108.0, 110.0, 112.0, 114.0, 116.0, 118.0, 120.0, 122.0, 124.0, 126.0, 128.0, 130.0, 132.0, 134.0, 136.0, 138.0, 140.0, 142.0, 144.0, 146.0, 148.0, 150.0, 152.0, 154.0, 156.0, 158.0, 160.0, 162.0, 164.0, 166.0, 168.0, 170.0, 172.0, 174.0, 176.0, 178.0, 180.0, 182.0, 184.0, 186.0, 188.0, 190.0, 192.0, 194.0, 196.0, 198.0, 200.0, 202.0, 204.0, 206.0, 208.0, 210.0, 212.0, 214.0, 216.0, 218.0, 220.0, 222.0, 224.0, 226.0, 228.0, 230.0, 232.0, 234.0, 236.0, 238.0, 240.0, 242.0, 244.0, 246.0, 248.0, 250.0, 252.0, 254.0, 256.0, 258.0, 260.0, 262.0, 264.0, 266.0, 268.0, 270.0, 272.0, 274.0, 276.0, 278.0, 280.0, 282.0, 284.0, 286.0, 288.0, 290.0, 292.0, 294.0, 296.0, 298.0, 300.0, 302.0, 304.0, 306.0, 308.0, 310.0, 312.0, 314.0, 316.0, 318.0, 320.0, 322.0, 324.0, 326.0, 328.0, 330.0, 332.0, 334.0, 336.0, 338.0, 340.0, 342.0, 344.0, 346.0, 348.0, 350.0, 352.0, 354.0, 356.0, 358.0, 360.0, 362.0, 364.0, 366.0, 368.0, 370.0, 372.0, 374.0, 376.0, 378.0, 380.0, 382.0, 384.0, 386.0, 388.0, 390.0, 392.0, 394.0, 396.0, 398.0, 400.0, 402.0, 404.0, 406.0], "valor": [1.99, 4.0, 5.95, 7.82, 9.74, 11.62, 13.75, 15.86, 17.87, 19.4, 20.47, 23.33, 26.21, 27.34, 28.49, 31.59, 33.39, 36.07, 39.85, 42.97, 43.3, 44.11, 45.65, 48.27, 51.8, 52.98, 55.74, 59.39, 60.01, 62.84, 66.63, 68.64, 69.33, 68.68, 71.41, 73.81, 73.6, 77.65, 79.98, 82.56, 82.22, 80.88, 82.6, 85.1, 88.47, 88.96, 93.23, 92.18, 95.16, 97.52, 98.98, 105.08, 105.43, 113.08, 113.8, 117.46, 120.43, 119.99, 121.44, 129.27, 130.83, 133.52, 138.2, 140.04, 140.94, 142.43, 145.93, 152.14, 153.35, 156.21, 156.83, 159.62, 161.15, 159.74, 163.75, 164.08, 169.64, 172.18, 175.49, 177.81, 185.84, 188.47, 188.32, 187.85, 190.99, 194.19, 196.19, 197.56, 197.16, 199.59, 199.85, 198.9, 201.83, 198.81, 200.51, 205.12, 206.18, 208.23, 204.24, 212.46, 215.76, 215.63, 212.66, 208.48, 209.95, 214.87, 217.5, 212.41, 201.8, 200.38, 195.9, 187.57, 190.91, 195.05, 204.44, 199.3, 201.52, 206.15, 211.15, 215.16, 217.51, 229.19, 226.36, 225.95, 223.9, 223.89, 225.84, 230.36, 234.56, 228.69, 226.31, 219.3, 225.2, 228.95, 229.73, 229.14, 228.17, 233.15, 245.07, 247.87, 252.05, 254.41, 255.29, 260.18, 257.45, 262.65, 271.7, 272.38, 273.76, 268.24, 276.85, 285.33, 282.05, 279.18, 286.58, 289.6, 291.98, 303.45, 300.76, 300.38, 299.22, 299.84, 303.61, 309.65, 301.35, 309.49, 313.36, 309.37, 308.88, 310.94, 313.85, 318.98, 322.38, 324.8, 330.77, 332.32, 334.04, 336.3, 335.1, 335.61, 334.81, 332.84, 335.71, 337.95, 343.09, 348.86, 351.87, 393.97, 423.16, 427.84, 428.93, 438.35, 441.99, 443.49, 453.76, 441.1, 445.16, 452.64, 454.86, 451.71, 449.51, 471.5, 465.59], "precio": [69784.0, 70326.0, 69462.0, 68036.0, 67413.0, 66588.0, 67394.0, 67963.0, 68044.0, 66272.0, 63110.0, 65784.0, 68260.0, 66009.0, 63992.0, 66465.0, 66062.0, 67419.0, 70746.0, 72760.0, 69937.0, 68028.0, 67318.0, 68244.0, 70421.0, 69314.0, 70311.0, 72405.0, 70725.0, 71709.0, 73767.0, 73783.0, 72375.0, 69616.0, 70363.0, 70762.0, 68654.0, 70565.0, 70875.0, 71398.0, 69377.0, 66564.0, 66341.0, 66747.0, 67820.0, 66666.0, 68372.0, 66142.0, 66847.0, 67108.0, 66742.0, 69508.0, 68423.0, 72089.0, 71282.0, 72326.0, 72922.0, 71449.0, 71126.0, 74545.0, 74296.0, 74691.0, 76193.0, 76106.0, 75511.0, 75241.0, 76037.0, 78232.0, 77829.0, 78271.0, 77582.0, 77977.0, 77749.0, 76107.0, 77069.0, 76283.0, 77943.0, 78195.0, 78793.0, 78937.0, 81616.0, 81895.0, 80963.0, 79906.0, 80394.0, 80902.0, 80905.0, 80646.0, 79670.0, 79846.0, 79150.0, 77983.0, 78350.0, 76406.0, 76292.0, 77287.0, 76936.0, 76958.0, 74745.0, 77022.0, 77496.0, 76733.0, 74969.0, 72790.0, 72610.0, 73622.0, 73839.0, 71434.0, 67194.0, 66059.0, 63923.0, 60554.0, 60989.0, 61675.0, 64012.0, 61781.0, 61849.0, 62659.0, 63573.0, 64180.0, 64287.0, 67149.0, 65734.0, 65038.0, 63873.0, 63302.0, 63290.0, 63997.0, 64610.0, 62443.0, 61250.0, 58811.0, 59861.0, 60327.0, 60007.0, 59332.0, 58565.0, 59330.0, 61856.0, 62060.0, 62607.0, 62699.0, 62424.0, 63133.0, 61986.0, 62757.0, 64443.0, 64131.0, 63988.0, 62232.0, 63766.0, 65260.0, 64054.0, 62948.0, 64168.0, 64397.0, 64484.0, 66576.0, 65549.0, 65030.0, 64349.0, 64053.0, 64433.0, 65291.0, 63121.0, 64407.0, 64799.0, 63561.0, 63050.0, 63064.0, 63249.0, 63881.0, 64163.0, 64248.0, 65035.0, 64947.0, 64893.0, 64945.0, 64328.0, 64044.0, 63510.0, 62758.0, 62924.0, 62970.0, 63555.0, 64255.0, 64443.0, 71788.0, 76744.0, 77230.0, 77067.0, 78402.0, 78695.0, 78608.0, 80074.0, 77489.0, 77851.0, 78811.0, 78851.0, 77958.0, 77234.0, 80670.0, 79318.0], "pnl": [-0.01, 0.0, -0.05, -0.18, -0.26, -0.38, -0.25, -0.14, -0.13, -0.6, -1.53, -0.67, 0.21, -0.66, -1.51, -0.41, -0.61, 0.07, 1.85, 2.97, 1.3, 0.11, -0.35, 0.27, 1.8, 0.98, 1.74, 3.39, 2.01, 2.84, 4.63, 4.64, 3.33, 0.68, 1.41, 1.81, -0.4, 1.65, 1.98, 2.56, 0.22, -3.12, -3.4, -2.9, -1.53, -3.04, -0.77, -3.82, -2.84, -2.48, -3.02, 1.08, -0.57, 5.08, 3.8, 5.46, 6.43, 3.99, 3.44, 9.27, 8.83, 9.52, 12.2, 12.04, 10.94, 10.43, 11.93, 16.14, 15.35, 16.21, 14.83, 15.62, 15.15, 11.74, 13.75, 12.08, 15.64, 16.18, 17.49, 17.81, 23.84, 24.47, 22.32, 19.85, 20.99, 22.19, 22.19, 21.56, 19.16, 19.59, 17.85, 14.9, 15.83, 10.81, 10.51, 13.12, 12.18, 12.23, 6.24, 12.46, 13.76, 11.63, 6.66, 0.48, -0.05, 2.87, 3.5, -3.59, -16.2, -19.62, -26.1, -36.43, -35.09, -32.95, -25.56, -32.7, -32.48, -29.85, -26.85, -24.84, -24.49, -14.81, -19.64, -22.05, -26.1, -28.11, -28.16, -25.64, -23.44, -31.31, -35.69, -44.7, -40.8, -39.05, -40.27, -42.86, -45.83, -42.85, -32.93, -32.13, -29.95, -29.59, -30.71, -27.82, -32.55, -29.35, -22.3, -23.62, -24.24, -31.76, -25.15, -18.67, -23.95, -28.82, -23.42, -22.4, -22.02, -12.55, -17.24, -19.62, -22.78, -24.16, -22.39, -18.35, -28.65, -22.51, -20.64, -26.63, -29.12, -29.06, -28.15, -25.02, -23.62, -23.2, -19.23, -19.68, -19.96, -19.7, -22.9, -24.39, -27.19, -31.16, -30.29, -30.05, -26.91, -23.14, -22.13, 17.97, 45.16, 47.84, 46.93, 54.35, 55.99, 55.49, 63.76, 49.1, 51.16, 56.64, 56.86, 51.71, 47.51, 67.5, 59.59], "pnlPct": [-0.3, 0.09, -0.86, -2.25, -2.57, -3.19, -1.77, -0.86, -0.69, -2.98, -6.95, -2.78, 0.79, -2.37, -5.02, -1.28, -1.79, 0.2, 4.86, 7.43, 3.1, 0.26, -0.77, 0.56, 3.6, 1.89, 3.22, 6.06, 3.46, 4.73, 7.47, 7.25, 5.04, 1.0, 2.01, 2.51, -0.54, 2.16, 2.54, 3.21, 0.27, -3.71, -3.95, -3.29, -1.7, -3.31, -0.82, -3.98, -2.9, -2.48, -2.96, 1.04, -0.53, 4.7, 3.46, 4.88, 5.64, 3.44, 2.92, 7.73, 7.24, 7.68, 9.68, 9.41, 8.41, 7.9, 8.9, 11.86, 11.12, 11.58, 10.44, 10.85, 10.38, 7.93, 9.17, 7.95, 10.16, 10.37, 11.07, 11.13, 14.71, 14.92, 13.44, 11.82, 12.35, 12.9, 12.76, 12.25, 10.77, 10.89, 9.81, 8.1, 8.51, 5.75, 5.53, 6.83, 6.28, 6.24, 3.15, 6.23, 6.81, 5.7, 3.23, 0.23, -0.02, 1.36, 1.64, -1.66, -7.43, -8.92, -11.76, -16.26, -15.53, -14.45, -11.12, -14.09, -13.88, -12.65, -11.28, -10.35, -10.12, -6.07, -7.99, -8.89, -10.44, -11.15, -11.08, -10.02, -9.08, -12.04, -13.62, -16.93, -15.34, -14.57, -14.91, -15.76, -16.73, -15.53, -11.85, -11.47, -10.62, -10.42, -10.74, -9.66, -11.22, -10.05, -7.59, -7.98, -8.13, -10.59, -8.33, -6.14, -7.83, -9.36, -7.55, -7.18, -7.01, -3.97, -5.42, -6.13, -7.07, -7.46, -6.87, -5.59, -8.68, -6.78, -6.18, -7.92, -8.62, -8.55, -8.23, -7.27, -6.83, -6.67, -5.49, -5.59, -5.64, -5.53, -6.4, -6.77, -7.51, -8.56, -8.28, -8.17, -7.27, -6.22, -5.92, 4.78, 11.95, 12.59, 12.29, 14.15, 14.5, 14.3, 16.35, 12.53, 12.98, 14.3, 14.29, 12.93, 11.82, 16.71, 14.68], "sats": [2857, 2835, 2871, 2931, 2958, 2995, 2959, 2934, 2930, 3009, 3160, 3031, 2921, 3021, 3116, 3000, 3018, 2958, 2819, 2741, 2851, 2931, 2962, 2922, 2832, 2877, 2836, 2754, 2819, 2781, 2703, 2703, 2755, 2864, 2834, 2818, 2904, 2826, 2813, 2793, 2874, 2996, 3006, 2987, 2940, 2991, 2916, 3015, 2983, 2971, 2988, 2869, 2914, 2766, 2797, 2757, 2734, 2791, 2803, 2675, 2684, 2670, 2617, 2620, 2641, 2650, 2622, 2549, 2562, 2548, 2570, 2557, 2565, 2620, 2587, 2614, 2558, 2550, 2531, 2526, 2443, 2435, 2463, 2495, 2480, 2465, 2465, 2473, 2503, 2497, 2519, 2557, 2545, 2610, 2614, 2580, 2592, 2591, 2668, 2589, 2573, 2599, 2660, 2739, 2746, 2708, 2700, 2791, 2968, 3019, 3119, 3293, 3269, 3233, 3115, 3228, 3224, 3182, 3137, 3107, 3102, 2970, 3033, 3066, 3122, 3150, 3151, 3116, 3086, 3193, 3256, 3391, 3331, 3305, 3323, 3361, 3405, 3361, 3224, 3213, 3185, 3180, 3194, 3158, 3217, 3177, 3094, 3109, 3116, 3204, 3127, 3055, 3113, 3168, 3107, 3096, 3092, 2995, 3042, 3066, 3099, 3113, 3095, 3054, 3159, 3096, 3077, 3137, 3163, 3162, 3153, 3121, 3108, 3104, 3066, 3070, 3073, 3070, 3100, 3113, 3140, 3177, 3169, 3167, 3137, 3103, 3094, 2778, 2598, 2582, 2587, 2543, 2534, 2537, 2490, 2573, 2561, 2530, 2529, 2558, 2582, 2472, 2514], "precioPromedio": 69166.43, "mejorIdx": 136, "mejorPrecio": 58565.0, "peorIdx": 81, "peorPrecio": 81895.0};
+
+// ---- tema ----
+function themeIcon(t){
+  var s=document.getElementById('theme-icon');
+  s.querySelector('.i-sun').style.display   = t==='dark' ? '' : 'none';
+  s.querySelector('.i-moon').style.display  = t==='dark' ? 'none' : '';
+}
+function toggleTheme(){
+  var h=document.documentElement;
+  var next = h.getAttribute('data-theme')==='dark' ? 'light' : 'dark';
+  h.setAttribute('data-theme',next);
+  try{ localStorage.setItem('theme',next); }catch(e){}
+  themeIcon(next);
+  renderCharts();
+}
+themeIcon(document.documentElement.getAttribute('data-theme'));
+
+// ---- paleta segun tema ----
+function palette(){
+  var dark = document.documentElement.getAttribute('data-theme')==='dark';
+  return dark
+    ? {txt:'#9aa7b8', faint:'#6b7889', grid:'#222835', tipBg:'#161b22', tipBorder:'#2a3140', tipTxt:'#e6edf3',
+       accent:'#6e8ef7', btc:'#f7931a', pos:'#3fb950', neg:'#f85149', zoomFill:'rgba(110,142,247,.12)'}
+    : {txt:'#5b6779', faint:'#8b97a8', grid:'#e7ebf2', tipBg:'#ffffff', tipBorder:'#dde2ec', tipTxt:'#131824',
+       accent:'#4257b2', btc:'#e07c0a', pos:'#18794e', neg:'#c93c37', zoomFill:'rgba(66,87,178,.10)'};
+}
+var usd0 = function(v){ return '$' + Math.round(v).toLocaleString('en-US'); };
+var usd2 = function(v){ return '$' + v.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); };
+function fade(hex,a){
+  var r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  return 'rgba('+r+','+g+','+b+','+a+')';
+}
+function area(hex){
+  return {type:'linear',x:0,y:0,x2:0,y2:1,colorStops:[{offset:0,color:fade(hex,.28)},{offset:1,color:fade(hex,.02)}]};
+}
+
+// ---- base comun de los 3 graficos ----
+function base(p, zoomStart){
+  return {
+    animationDuration: 700,
+    textStyle:{fontFamily:'Inter,-apple-system,sans-serif'},
+    grid:{left:8,right:16,top:44,bottom:58,containLabel:true},
+    tooltip:{
+      trigger:'axis',
+      backgroundColor:p.tipBg, borderColor:p.tipBorder, borderWidth:1,
+      padding:[9,12],
+      textStyle:{color:p.tipTxt,fontSize:12},
+      axisPointer:{type:'line',lineStyle:{color:p.faint,width:1,type:'dashed'}},
+      extraCssText:'box-shadow:0 6px 20px rgba(0,0,0,.18);border-radius:8px'
+    },
+    legend:{top:2,left:0,icon:'roundRect',itemWidth:9,itemHeight:9,itemGap:16,
+            textStyle:{color:p.txt,fontSize:12}},
+    xAxis:{
+      type:'category', data:DATA.labels, boundaryGap:false,
+      axisLine:{lineStyle:{color:p.grid}},
+      axisTick:{show:false},
+      axisLabel:{color:p.faint,fontSize:11,hideOverlap:true,margin:12},
+      splitLine:{show:false}
+    },
+    dataZoom:[
+      {type:'inside', start:zoomStart, end:100, zoomOnMouseWheel:'shift'},
+      {type:'slider', start:zoomStart, end:100, height:26, bottom:8,
+       borderColor:'transparent', backgroundColor:'transparent',
+       fillerColor:p.zoomFill, showDetail:false,
+       moveHandleSize:0, brushSelect:false,
+       handleSize:'80%', handleStyle:{color:p.tipBg,borderColor:p.accent,borderWidth:1.5,shadowBlur:0},
+       dataBackground:{lineStyle:{color:p.faint,width:1,opacity:.5},areaStyle:{color:p.faint,opacity:.12}},
+       selectedDataBackground:{lineStyle:{color:p.accent,width:1},areaStyle:{color:p.accent,opacity:.2}}}
+    ]
+  };
+}
+function yAxis(p, fmt){
+  return {
+    type:'value', scale:true,
+    axisLine:{show:false}, axisTick:{show:false},
+    axisLabel:{color:p.faint,fontSize:11,formatter:fmt},
+    splitLine:{lineStyle:{color:p.grid,type:'dashed'}}
+  };
+}
+
+// ---- graficos ----
+var charts = {};
+function renderCharts(){
+  try{
+    var p = palette();
+    Object.keys(charts).forEach(function(k){ if(charts[k]) charts[k].dispose(); });
+    charts = {};
+
+    // 1. DCA: invertido vs valor
+    charts.dca = echarts.init(document.getElementById('chart-dca'));
+    charts.dca.setOption(Object.assign(base(p,0),{
+      yAxis: yAxis(p, function(v){ return usd0(v); }),
+      tooltip: Object.assign(base(p,0).tooltip,{
+        formatter:function(ps){
+          var i=ps[0].dataIndex, d=DATA.pnl[i], pct=DATA.pnlPct[i];
+          var c = d>=0 ? p.pos : p.neg;
+          var out = '<b>'+DATA.fechas[i]+'</b>';
+          ps.forEach(function(s){ out += '<br/>'+s.marker+' '+s.seriesName+': <b>'+usd2(s.value)+'</b>'; });
+          out += '<br/><span style="color:'+c+'">&#9679; Resultado: <b>'+(d>=0?'+':'-')+usd2(Math.abs(d))
+               + ' ('+(d>=0?'+':'')+pct.toFixed(2)+'%)</b></span>';
+          return out;
         }
+      }),
+      series:[
+        {name:'Invertido', type:'line', data:DATA.invertido, smooth:true, symbol:'none',
+         lineStyle:{width:2, color:p.accent, type:'dashed'}, itemStyle:{color:p.accent}},
+        {name:'Valor del portafolio', type:'line', data:DATA.valor, smooth:true, symbol:'none',
+         lineStyle:{width:2.5, color:p.btc}, itemStyle:{color:p.btc}, areaStyle:{color:area(p.btc)},
+         emphasis:{focus:'series'}}
+      ]
+    }));
 
-        // Cargar tema guardado
-        const savedTheme = localStorage.getItem('theme') || 'dark';
-        document.documentElement.setAttribute('data-theme', savedTheme);
-        updateThemeIcon(savedTheme);
-
-        // Datos desde Python
-        const labels = ['14 Feb', '15 Feb', '16 Feb', '17 Feb', '18 Feb', '19 Feb', '20 Feb', '21 Feb', '22 Feb', '23 Feb', '24 Feb', '25 Feb', '26 Feb', '27 Feb', '28 Feb', '01 Mar', '02 Mar', '03 Mar', '04 Mar', '05 Mar', '06 Mar', '07 Mar', '08 Mar', '09 Mar', '10 Mar', '11 Mar', '12 Mar', '13 Mar', '14 Mar', '15 Mar', '16 Mar', '17 Mar', '18 Mar', '19 Mar', '20 Mar', '21 Mar', '22 Mar', '23 Mar', '24 Mar', '25 Mar', '26 Mar', '27 Mar', '28 Mar', '29 Mar', '30 Mar', '31 Mar', '01 Apr', '02 Apr', '03 Apr', '04 Apr', '05 Apr', '06 Apr', '07 Apr', '08 Apr', '09 Apr', '10 Apr', '11 Apr', '12 Apr', '13 Apr', '14 Apr', '15 Apr', '16 Apr', '17 Apr', '18 Apr', '19 Apr', '20 Apr', '21 Apr', '22 Apr', '23 Apr', '24 Apr', '25 Apr', '26 Apr', '27 Apr', '28 Apr', '29 Apr', '30 Apr', '01 May', '02 May', '03 May', '04 May', '05 May', '06 May', '07 May', '08 May', '09 May', '10 May', '11 May', '12 May', '13 May', '14 May', '15 May', '16 May', '17 May', '18 May', '19 May', '20 May', '21 May', '22 May', '23 May', '24 May', '25 May', '26 May', '27 May', '28 May', '29 May', '30 May', '31 May', '01 Jun', '02 Jun', '03 Jun', '04 Jun', '05 Jun', '06 Jun', '07 Jun', '08 Jun', '09 Jun', '10 Jun', '11 Jun', '12 Jun', '13 Jun', '14 Jun', '15 Jun', '16 Jun', '17 Jun', '18 Jun', '19 Jun', '20 Jun', '21 Jun', '22 Jun', '23 Jun', '24 Jun', '25 Jun', '26 Jun', '27 Jun', '28 Jun', '29 Jun', '30 Jun', '01 Jul', '02 Jul', '03 Jul', '04 Jul', '05 Jul', '06 Jul', '07 Jul', '08 Jul', '09 Jul', '10 Jul', '11 Jul', '12 Jul', '13 Jul', '14 Jul', '15 Jul', '16 Jul', '17 Jul', '18 Jul', '19 Jul', '20 Jul', '21 Jul', '22 Jul', '23 Jul', '24 Jul', '25 Jul', '26 Jul', '27 Jul', '28 Jul', '29 Jul', '30 Jul', '31 Jul', '01 Aug', '02 Aug', '03 Aug', '04 Aug', '05 Aug', '06 Aug', '07 Aug', '08 Aug', '09 Aug', '10 Aug', '11 Aug', '12 Aug', '13 Aug', '14 Aug', '15 Aug', '16 Aug', '17 Aug', '18 Aug', '19 Aug', '20 Aug', '21 Aug', '22 Aug', '23 Aug', '24 Aug', '25 Aug', '26 Aug', '27 Aug', '28 Aug', '29 Aug', '30 Aug', '31 Aug', '01 Sep', '02 Sep', '03 Sep', '04 Sep'];
-        const dataInvertido = [2.0, 4.0, 6.0, 8.0, 10.0, 12.0, 14.0, 16.0, 18.0, 20.0, 22.0, 24.0, 26.0, 28.0, 30.0, 32.0, 34.0, 36.0, 38.0, 40.0, 42.0, 44.0, 46.0, 48.0, 50.0, 52.0, 54.0, 56.0, 58.0, 60.0, 62.0, 64.0, 66.0, 68.0, 70.0, 72.0, 74.0, 76.0, 78.0, 80.0, 82.0, 84.0, 86.0, 88.0, 90.0, 92.0, 94.0, 96.0, 98.0, 100.0, 102.0, 104.0, 106.0, 108.0, 110.0, 112.0, 114.0, 116.0, 118.0, 120.0, 122.0, 124.0, 126.0, 128.0, 130.0, 132.0, 134.0, 136.0, 138.0, 140.0, 142.0, 144.0, 146.0, 148.0, 150.0, 152.0, 154.0, 156.0, 158.0, 160.0, 162.0, 164.0, 166.0, 168.0, 170.0, 172.0, 174.0, 176.0, 178.0, 180.0, 182.0, 184.0, 186.0, 188.0, 190.0, 192.0, 194.0, 196.0, 198.0, 200.0, 202.0, 204.0, 206.0, 208.0, 210.0, 212.0, 214.0, 216.0, 218.0, 220.0, 222.0, 224.0, 226.0, 228.0, 230.0, 232.0, 234.0, 236.0, 238.0, 240.0, 242.0, 244.0, 246.0, 248.0, 250.0, 252.0, 254.0, 256.0, 258.0, 260.0, 262.0, 264.0, 266.0, 268.0, 270.0, 272.0, 274.0, 276.0, 278.0, 280.0, 282.0, 284.0, 286.0, 288.0, 290.0, 292.0, 294.0, 296.0, 298.0, 300.0, 302.0, 304.0, 306.0, 308.0, 310.0, 312.0, 314.0, 316.0, 318.0, 320.0, 322.0, 324.0, 326.0, 328.0, 330.0, 332.0, 334.0, 336.0, 338.0, 340.0, 342.0, 344.0, 346.0, 348.0, 350.0, 352.0, 354.0, 356.0, 358.0, 360.0, 362.0, 364.0, 366.0, 368.0, 370.0, 372.0, 374.0, 376.0, 378.0, 380.0, 382.0, 384.0, 386.0, 388.0, 390.0, 392.0, 394.0, 396.0, 398.0, 400.0, 402.0, 404.0, 406.0];
-        const dataValorBTC = [1.994, 4.003487045741144, 5.94830164052088, 7.820187705716486, 9.74257889654691, 11.617349258500075, 13.75196894226218, 15.862075277071616, 17.874980094361067, 19.40348034820846, 20.47169261189396, 23.33308773222677, 26.205306223425143, 27.335137686816147, 28.49387321205804, 31.58903192648202, 33.3914968348342, 36.07140191195675, 39.84545729932648, 42.97377939528729, 43.30044872963451, 44.11251989904595, 45.64612286946264, 48.268013029257816, 51.80177424437848, 52.98146368234444, 55.73753944324249, 59.3915130973464, 60.00746265878972, 62.83634909577895, 66.63370999105074, 68.64216278647069, 69.32626531410493, 68.67748581839732, 71.40841528728379, 73.80734341285138, 73.60262263171805, 77.64536868947059, 79.98047354730785, 82.5646645549299, 82.22157966367553, 80.88177590170534, 82.60480907239278, 85.10434188744252, 88.46644770260701, 88.95513539577651, 93.225520074395, 92.17890535249124, 95.15542974354734, 97.52095826633789, 98.98308917881138, 105.07926209344184, 105.43300486590556, 113.07594448910272, 113.80411631555695, 117.4648975146447, 120.42686309989324, 119.98828076059688, 121.43984889050772, 129.27141663446227, 130.83361594035688, 133.52320222086038, 138.20228944335514, 140.03848493136692, 140.93765799873984, 142.42771595506693, 145.92850695864027, 152.13510178450244, 153.345401431459, 156.21026791351892, 156.8291880679485, 159.62166618512424, 161.14894215251843, 159.7395985337635, 163.7527228428174, 164.07666561936088, 169.641150064488, 172.18362227900005, 175.49440476026209, 177.8091336864987, 185.83770136890388, 188.4669777691397, 188.31614324589347, 187.85161078772128, 190.992853623854, 194.19371445477063, 196.1949155269665, 197.5608395968989, 197.1639041574872, 199.59346142033723, 199.84764916738987, 198.89506411902136, 201.82509490177108, 198.8114626811003, 200.5088301293908, 205.1178655980948, 206.1803199199676, 208.23327758656905, 204.2393329505447, 212.45519342453272, 215.75666092320827, 215.626392157275, 212.66339900223244, 208.4762635138796, 209.95472940984573, 214.87496802935223, 217.50230953137643, 212.41207146716337, 201.79824909937045, 200.38359635168288, 195.89824665205828, 187.5676186938726, 190.9090427142756, 195.050374254422, 204.43525750747816, 199.30410816830104, 201.5174746297604, 206.150630549011, 211.15172731597872, 215.1618206021316, 217.5145353856169, 229.19208882991376, 226.3564293309672, 225.95373850407825, 223.90031845184183, 223.89273590778893, 225.8442931282392, 230.3611548005671, 234.5616861675439, 228.6885576437058, 226.3133657523928, 219.2954751553292, 225.2047333368417, 228.9518849002126, 229.7314269764268, 229.14124991026628, 228.17308213096584, 233.14757231844987, 245.06792943417628, 247.8701591548892, 252.04889935884552, 254.41328124491125, 255.2914157232484, 260.1849673980447, 257.4519283280555, 262.6481907218333, 271.6983732920135, 272.3769489252496, 273.76359984763195, 268.2448024272952, 276.85095577161064, 285.3314113736962, 282.0525078781855, 279.1763971323552, 286.58113622654787, 289.5978746662038, 291.98311983438884, 303.44968181399935, 300.76267329406267, 300.3753123665143, 299.2237551202921, 299.8413509568091, 303.61418588043983, 309.6511603110176, 301.35364972188347, 309.487298864672, 313.3649298543874, 309.3720198224437, 308.8788169444268, 310.94140224874207, 313.84755751031787, 318.97760165878105, 322.3797149266952, 324.8007877843952, 330.77340532869266, 332.3198300281765, 334.0375236426383, 336.2991942886145, 335.09823543302633, 335.61281902239494, 334.8084734262739, 332.8381217963425, 335.71250562339395, 337.9519251017886, 343.0855451777659, 348.85831760517726, 351.87302204388936, 393.97234530494296, 423.1648595877035, 427.8386537313394, 428.9296665429582, 438.3538390530409, 441.98603291088006, 443.4914023134664, 453.756295807654, 441.1018453160704, 445.1565102879291, 452.6398456834399, 454.8635800330512, 451.7061783137364, 449.505159545944, 471.4968254469628, 465.5887093194731];
-        const dataPrecioBTC = [69784, 70326, 69462, 68036, 67413, 66588, 67394, 67963, 68044, 66272, 63110, 65784, 68260, 66009, 63992, 66465, 66062, 67419, 70746, 72760, 69937, 68028, 67318, 68244, 70421, 69314, 70311, 72405, 70725, 71709, 73767, 73783, 72375, 69616, 70363, 70762, 68654, 70565, 70875, 71398, 69377, 66564, 66341, 66747, 67820, 66666, 68372, 66142, 66847, 67108, 66742, 69508, 68423, 72089, 71282, 72326, 72922, 71449, 71126, 74545, 74296, 74691, 76193, 76106, 75511, 75241, 76037, 78232, 77829, 78271, 77582, 77977, 77749, 76107, 77069, 76283, 77943, 78195, 78793, 78937, 81616, 81895, 80963, 79906, 80394, 80902, 80905, 80646, 79670, 79846, 79150, 77983, 78350, 76406, 76292, 77287, 76936, 76958, 74745, 77022, 77496, 76733, 74969, 72790, 72610, 73622, 73839, 71434, 67194, 66059, 63923, 60554, 60989, 61675, 64012, 61781, 61849, 62659, 63573, 64180, 64287, 67149, 65734, 65038, 63873, 63302, 63290, 63997, 64610, 62443, 61250, 58811, 59861, 60327, 60007, 59332, 58565, 59330, 61856, 62060, 62607, 62699, 62424, 63133, 61986, 62757, 64443, 64131, 63988, 62232, 63766, 65260, 64054, 62948, 64168, 64397, 64484, 66576, 65549, 65030, 64349, 64053, 64433, 65291, 63121, 64407, 64799, 63561, 63050, 63064, 63249, 63881, 64163, 64248, 65035, 64947, 64893, 64945, 64328, 64044, 63510, 62758, 62924, 62970, 63555, 64255, 64443, 71788, 76744, 77230, 77067, 78402, 78695, 78608, 80074, 77489, 77851, 78811, 78851, 77958, 77234, 80670, 79318];
-
-        // ===== APACHE ECHARTS - GRÁFICOS =====
-
-        // Configuración de tema según modo
-        function getEChartsTheme() {
-            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-            return isDark ? 'dark' : null; // null es el tema light por defecto
+    // 2. Resultado acumulado (P&L), partido en tramos por signo para colorearlo
+    var pnlPos = DATA.pnl.map(function(v){ return v >= 0 ? v : null; });
+    var pnlNeg = DATA.pnl.map(function(v){ return v <= 0 ? v : null; });
+    charts.pnl = echarts.init(document.getElementById('chart-pnl'));
+    charts.pnl.setOption(Object.assign(base(p,0),{
+      legend:{show:false},
+      grid:{left:8,right:16,top:20,bottom:58,containLabel:true},
+      yAxis: yAxis(p, function(v){ return (v>=0?'+':'-') + '$' + Math.abs(Math.round(v)).toLocaleString('en-US'); }),
+      tooltip: Object.assign(base(p,0).tooltip,{
+        formatter:function(ps){
+          var i=ps[0].dataIndex, d=DATA.pnl[i], pct=DATA.pnlPct[i];
+          var c = d>=0 ? p.pos : p.neg;
+          return '<b>'+DATA.fechas[i]+'</b><br/><span style="color:'+c+'">&#9679; '
+               + (d>=0?'+':'-')+usd2(Math.abs(d))+' <b>('+(d>=0?'+':'')+pct.toFixed(2)+'%)</b></span>';
         }
-
-        // Calcular rango dinámico para precio BTC (margen del 2%)
-        function getBTCPriceRange() {
-            const min = Math.min(...dataPrecioBTC);
-            const max = Math.max(...dataPrecioBTC);
-            const range = max - min;
-            const margin = range * 0.5; // 50% de margen arriba y abajo
-            return {
-                min: Math.floor(min - margin),
-                max: Math.ceil(max + margin)
-            };
+      }),
+      series:[
+        {
+          name:'Ganancia', type:'line', data:pnlPos, smooth:true, symbol:'none',
+          connectNulls:false,
+          itemStyle:{color:p.pos}, lineStyle:{width:2.5, color:p.pos},
+          areaStyle:{color:area(p.pos), origin:0},
+          markLine:{
+            silent:true, symbol:'none',
+            data:[{yAxis:0}],
+            lineStyle:{color:p.faint,type:'solid',width:1},
+            label:{show:false}
+          }
+        },
+        {
+          name:'Pérdida', type:'line', data:pnlNeg, smooth:true, symbol:'none',
+          connectNulls:false,
+          itemStyle:{color:p.neg}, lineStyle:{width:2.5, color:p.neg},
+          areaStyle:{color:area(p.neg), origin:0}
         }
+      ]
+    }));
 
-        // Calcular rango dinámico para DCA (comenzar cerca del primer valor)
-        function getDCARange() {
-            const allValues = [...dataInvertido, ...dataValorBTC];
-            const min = Math.min(...allValues);
-            const max = Math.max(...allValues);
-            const range = max - min;
-            const margin = range * 0.3; // 30% de margen
-            return {
-                min: Math.max(0, Math.floor(min - margin)),
-                max: Math.ceil(max + margin)
-            };
+    // 3. Precio de BTC + precio promedio + mejor/peor compra
+    charts.price = echarts.init(document.getElementById('chart-price'));
+    charts.price.setOption(Object.assign(base(p,0),{
+      legend:{show:false},
+      grid:{left:8,right:16,top:20,bottom:58,containLabel:true},
+      yAxis: yAxis(p, function(v){ return usd0(v); }),
+      tooltip: Object.assign(base(p,0).tooltip,{
+        formatter:function(ps){
+          var i=ps[0].dataIndex;
+          var diff = (ps[0].value/DATA.precioPromedio - 1)*100;
+          var c = diff>=0 ? p.pos : p.neg;
+          return '<b>'+DATA.fechas[i]+'</b><br/>&#9679; BTC: <b>'+usd2(ps[0].value)+'</b>'
+               + '<br/><span style="color:'+c+'">'+(diff>=0?'+':'')+diff.toFixed(1)+'% vs tu promedio</span>'
+               + '<br/><span style="color:'+p.faint+'">Compraste '+DATA.sats[i].toLocaleString('en-US')+' sats</span>';
         }
+      }),
+      series:[{
+        name:'BTC/USD', type:'line', data:DATA.precio, smooth:true, symbol:'none',
+        lineStyle:{width:2.5,color:p.btc}, itemStyle:{color:p.btc}, areaStyle:{color:area(p.btc)},
+        markLine:{
+          silent:true, symbol:'none',
+          data:[{yAxis:DATA.precioPromedio, name:'Promedio'}],
+          lineStyle:{color:p.accent,type:'dashed',width:1.5},
+          label:{formatter:'Tu promedio  '+usd0(DATA.precioPromedio), position:'insideEndTop',
+                 color:p.accent, fontSize:11, fontWeight:600}
+        },
+        markPoint:{
+          symbol:'circle', symbolSize:10,
+          data:[
+            {name:'Mejor compra', coord:[DATA.mejorIdx, DATA.mejorPrecio],
+             itemStyle:{color:p.pos, borderColor:p.tipBg, borderWidth:2},
+             label:{show:true, formatter:'Mejor', position:'bottom', distance:6,
+                    color:p.pos, fontSize:10, fontWeight:600}},
+            {name:'Peor compra', coord:[DATA.peorIdx, DATA.peorPrecio],
+             itemStyle:{color:p.neg, borderColor:p.tipBg, borderWidth:2},
+             label:{show:true, formatter:'Peor', position:'top', distance:6,
+                    color:p.neg, fontSize:10, fontWeight:600}}
+          ]
+        },
+        emphasis:{focus:'series'}
+      }]
+    }));
+  }catch(e){
+    console.error('Error al renderizar graficos:', e);
+  }
+}
 
-        let dcaChart, btcPriceChart;
+var rt;
+window.addEventListener('resize', function(){
+  clearTimeout(rt);
+  rt = setTimeout(function(){
+    Object.keys(charts).forEach(function(k){ if(charts[k]) charts[k].resize(); });
+  }, 120);
+});
 
-        // Inicializar gráficos con ECharts
-        function initCharts() {
-            try {
-                const theme = getEChartsTheme();
+if(document.readyState === 'loading'){
+  document.addEventListener('DOMContentLoaded', renderCharts);
+}else{
+  renderCharts();
+}
 
-                // Destruir instancias previas si existen
-                if (dcaChart) dcaChart.dispose();
-                if (btcPriceChart) btcPriceChart.dispose();
-
-            // Gráfico 1: Evolución del DCA
-            dcaChart = echarts.init(document.getElementById('dcaChart'), theme);
-            dcaChart.setOption({
-                animation: true,
-                animationDuration: 1000,
-                animationEasing: 'cubicOut',
-                tooltip: {
-                    trigger: 'axis',
-                    axisPointer: {
-                        type: 'cross',
-                        crossStyle: {
-                            color: '#667eea'
-                        }
-                    },
-                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                    borderColor: '#667eea',
-                    borderWidth: 1,
-                    textStyle: { fontSize: 13 },
-                    formatter: function(params) {
-                        let result = params[0].name + '<br/>';
-                        params.forEach(item => {
-                            result += item.marker + ' ' + item.seriesName + ': $' +
-                                     item.value.toFixed(2) + '<br/>';
-                        });
-                        return result;
-                    }
-                },
-                legend: {
-                    data: ['💵 USD Invertidos', '₿ Valor de Bitcoins'],
-                    top: 10,
-                    textStyle: { fontSize: 13 }
-                },
-                grid: {
-                    left: '3%',
-                    right: '4%',
-                    bottom: '3%',
-                    top: 60,
-                    containLabel: true
-                },
-                xAxis: {
-                    type: 'category',
-                    data: labels,
-                    boundaryGap: false, // Comienza justo en el primer punto
-                    axisLabel: { rotate: 45 },
-                    axisLine: { show: false }, // Sin línea del eje
-                    axisTick: { show: false }, // Sin ticks
-                    splitLine: { show: false } // Sin líneas de cuadrícula
-                },
-                yAxis: {
-                    type: 'value',
-                    scale: true,
-                    min: getDCARange().min,
-                    max: getDCARange().max,
-                    axisLabel: {
-                        formatter: '${value}'
-                    },
-                    axisLine: { show: false }, // Sin línea del eje
-                    axisTick: { show: false }, // Sin ticks
-                    splitLine: { show: false } // Sin líneas de cuadrícula
-                },
-                series: [
-                    {
-                        name: '💵 USD Invertidos',
-                        type: 'line',
-                        data: dataInvertido,
-                        smooth: true,
-                        lineStyle: { width: 3, color: '#667eea' },
-                        itemStyle: { color: '#667eea' },
-                        areaStyle: {
-                            color: {
-                                type: 'linear',
-                                x: 0, y: 0, x2: 0, y2: 1,
-                                colorStops: [
-                                    { offset: 0, color: 'rgba(102, 126, 234, 0.3)' },
-                                    { offset: 1, color: 'rgba(102, 126, 234, 0.05)' }
-                                ]
-                            }
-                        },
-                        emphasis: { focus: 'series' }
-                    },
-                    {
-                        name: '₿ Valor de Bitcoins',
-                        type: 'line',
-                        data: dataValorBTC,
-                        smooth: true,
-                        lineStyle: { width: 3, color: '#f7931a' },
-                        itemStyle: { color: '#f7931a' },
-                        areaStyle: {
-                            color: {
-                                type: 'linear',
-                                x: 0, y: 0, x2: 0, y2: 1,
-                                colorStops: [
-                                    { offset: 0, color: 'rgba(247, 147, 26, 0.3)' },
-                                    { offset: 1, color: 'rgba(247, 147, 26, 0.05)' }
-                                ]
-                            }
-                        },
-                        emphasis: { focus: 'series' }
-                    }
-                ]
-            });
-
-            // Gráfico 2: Precio de Bitcoin
-            btcPriceChart = echarts.init(document.getElementById('btcPriceChart'), theme);
-            btcPriceChart.setOption({
-                animation: true,
-                animationDuration: 1000,
-                animationEasing: 'cubicOut',
-                tooltip: {
-                    trigger: 'axis',
-                    axisPointer: {
-                        type: 'cross',
-                        crossStyle: {
-                            color: '#10b981'
-                        }
-                    },
-                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                    borderColor: '#10b981',
-                    borderWidth: 1,
-                    textStyle: { fontSize: 13 },
-                    formatter: function(params) {
-                        return params[0].name + '<br/>' +
-                               params[0].marker + ' Precio: $' +
-                               params[0].value.toLocaleString('en-US', {minimumFractionDigits: 2});
-                    }
-                },
-                legend: {
-                    data: ['💰 Precio de Bitcoin (USD)'],
-                    top: 10,
-                    textStyle: { fontSize: 13 }
-                },
-                grid: {
-                    left: '3%',
-                    right: '4%',
-                    bottom: '3%',
-                    top: 60,
-                    containLabel: true
-                },
-                xAxis: {
-                    type: 'category',
-                    data: labels,
-                    boundaryGap: false, // Comienza justo en el primer punto
-                    axisLabel: { rotate: 45 },
-                    axisLine: { show: false }, // Sin línea del eje
-                    axisTick: { show: false }, // Sin ticks
-                    splitLine: { show: false } // Sin líneas de cuadrícula
-                },
-                yAxis: {
-                    type: 'value',
-                    scale: true,
-                    min: getBTCPriceRange().min,
-                    max: getBTCPriceRange().max,
-                    axisLabel: {
-                        formatter: function(value) {
-                            return '$' + value.toLocaleString('en-US', {maximumFractionDigits: 0});
-                        }
-                    },
-                    axisLine: { show: false }, // Sin línea del eje
-                    axisTick: { show: false }, // Sin ticks
-                    splitLine: { show: false } // Sin líneas de cuadrícula
-                },
-                series: [{
-                    name: '💰 Precio de Bitcoin (USD)',
-                    type: 'line',
-                    data: dataPrecioBTC,
-                    smooth: true,
-                    lineStyle: { width: 3, color: '#10b981' },
-                    itemStyle: { color: '#10b981' },
-                    areaStyle: {
-                        color: {
-                            type: 'linear',
-                            x: 0, y: 0, x2: 0, y2: 1,
-                            colorStops: [
-                                { offset: 0, color: 'rgba(16, 185, 129, 0.3)' },
-                                { offset: 1, color: 'rgba(16, 185, 129, 0.05)' }
-                            ]
-                        }
-                    },
-                    emphasis: { focus: 'series' }
-                }]
-            });
-
-                // Responsive automático
-                window.addEventListener('resize', function() {
-                    if (dcaChart) dcaChart.resize();
-                    if (btcPriceChart) btcPriceChart.resize();
-                });
-            } catch (error) {
-                console.error('Error al inicializar gráficos:', error);
-                // Aunque falle, el resto del sitio debe funcionar
-            }
-        }
-
-        // Función actualizada de toggle theme
-        function toggleTheme() {
-            const html = document.documentElement;
-            const currentTheme = html.getAttribute('data-theme');
-            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-
-            html.setAttribute('data-theme', newTheme);
-            localStorage.setItem('theme', newTheme);
-            updateThemeIcon(newTheme);
-
-            // Recrear gráficos con nuevo tema
-            initCharts();
-        }
-
-        // Inicializar gráficos cuando el DOM esté completamente cargado
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initCharts);
-        } else {
-            // DOM ya está listo, ejecutar inmediatamente
-            initCharts();
-        }
-    </script>
+</script>
 </body>
 </html>

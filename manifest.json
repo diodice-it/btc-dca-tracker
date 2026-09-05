@@ -3,7 +3,7 @@
   "short_name": "BTC DCA",
   "start_url": "/btc-dca-tracker/",
   "display": "standalone",
-  "background_color": "#1a1a2e",
+  "background_color": "#0d1117",
   "theme_color": "#F7931A",
   "icons": [
     {

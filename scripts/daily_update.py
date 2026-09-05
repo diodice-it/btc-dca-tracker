@@ -155,15 +155,371 @@ def update_btc_data():
         log_message(traceback.format_exc())
         sys.exit(1)
 
+# ===== ICONOS SVG (stroke, heredan color del label) =====
+ICONS = {
+    "trend": '<svg viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8"/><path d="M21 7v5h-5"/></svg>',
+    "coin": '<svg viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>',
+    "clock": '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+    "bars": '<svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>',
+    "check": '<svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>',
+    "cross": '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg>',
+    "dip": '<svg viewBox="0 0 24 24"><path d="M3 7l5 8 4-4 4 6 5-11"/></svg>',
+    "star": '<svg viewBox="0 0 24 24"><path d="M12 3l2.9 5.9 6.6 1-4.8 4.6 1.2 6.5L12 18l-5.9 3 1.2-6.5-4.8-4.6 6.6-1z"/></svg>',
+}
+
+# ===== CSS (string plano: no necesita escapar llaves) =====
+DASHBOARD_CSS = """
+:root{
+  --bg:#f4f6fa; --surface:#ffffff; --surface-2:#eef1f7;
+  --line:#dde2ec; --line-soft:#e7ebf2;
+  --txt:#131824; --txt-2:#5b6779; --txt-3:#8b97a8;
+  --btc:#e07c0a; --pos:#18794e; --neg:#c93c37; --accent:#4257b2;
+  --pos-bg:rgba(24,121,78,.10); --neg-bg:rgba(201,60,55,.10);
+  --shadow:0 1px 2px rgba(16,24,40,.05),0 4px 12px rgba(16,24,40,.05);
+}
+[data-theme="dark"]{
+  --bg:#0d1117; --surface:#161b22; --surface-2:#1c2230;
+  --line:#2a3140; --line-soft:#222835;
+  --txt:#e6edf3; --txt-2:#9aa7b8; --txt-3:#6b7889;
+  --btc:#f7931a; --pos:#3fb950; --neg:#f85149; --accent:#6e8ef7;
+  --pos-bg:rgba(63,185,80,.13); --neg-bg:rgba(248,81,73,.13);
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 14px rgba(0,0,0,.2);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{
+  background:var(--bg);color:var(--txt);
+  font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  line-height:1.5;padding:28px 20px 40px;min-height:100vh;
+  font-feature-settings:'tnum' 1;
+}
+.wrap{max-width:1240px;margin:0 auto}
+.mono{font-family:'JetBrains Mono','SF Mono',Monaco,Consolas,monospace}
+
+/* ---- header ---- */
+.head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:30px}
+.head h1{font-size:1.6rem;font-weight:700;letter-spacing:-.025em;display:flex;align-items:center;gap:9px}
+.head h1 .b{color:var(--btc)}
+.head .meta{margin-top:5px;font-size:.83rem;color:var(--txt-2);display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.theme-toggle{
+  flex:none;width:40px;height:40px;border-radius:10px;cursor:pointer;
+  background:var(--surface);border:1px solid var(--line);
+  display:flex;align-items:center;justify-content:center;
+  transition:border-color .2s,transform .2s;
+}
+.theme-toggle:hover{border-color:var(--txt-3);transform:translateY(-1px)}
+.theme-toggle svg{width:18px;height:18px;fill:none;stroke:var(--txt-2);stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;pointer-events:none}
+
+/* ---- primitivas ---- */
+.sec{font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txt-3);margin:30px 0 12px;display:flex;align-items:center;gap:10px}
+.sec::after{content:"";flex:1;height:1px;background:var(--line-soft)}
+.dot{width:3px;height:3px;border-radius:50%;background:var(--txt-3);flex:none}
+.pill{
+  font-family:'JetBrains Mono','SF Mono',Monaco,monospace;font-size:.92rem;font-weight:700;
+  padding:4px 10px;border-radius:8px;white-space:nowrap;
+  background:var(--pos-bg);color:var(--pos);border:1px solid transparent;
+}
+.pill.neg{background:var(--neg-bg);color:var(--neg)}
+.pill.sm{font-size:.76rem;padding:2px 7px}
+
+/* ---- hero ---- */
+.hero{
+  background:var(--surface);border:1px solid var(--line);border-radius:16px;
+  padding:26px 28px;box-shadow:var(--shadow);
+  display:grid;grid-template-columns:1.15fr 1fr;gap:32px;
+}
+.hero .lbl{font-size:.72rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--txt-3);margin-bottom:10px}
+.pnl{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+.pnl .big{font-size:3rem;font-weight:700;letter-spacing:-.03em;line-height:1}
+.hero-meta{margin-top:15px;display:flex;gap:9px;align-items:center;flex-wrap:wrap;font-size:.82rem;color:var(--txt-2)}
+.bar{margin-top:20px;height:8px;border-radius:6px;background:var(--surface-2);overflow:hidden;display:flex}
+.bar i{display:block;height:100%}
+.barleg{display:flex;gap:18px;margin-top:9px;font-size:.75rem;color:var(--txt-2);flex-wrap:wrap}
+.barleg span{display:flex;align-items:center;gap:6px}
+.sw{width:9px;height:9px;border-radius:3px;flex:none}
+.hero-r{border-left:1px solid var(--line);padding-left:32px;display:flex;flex-direction:column;justify-content:center;gap:13px}
+.kv{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.kv .k{font-size:.82rem;color:var(--txt-2)}
+.kv .v{font-size:1.05rem;font-weight:600;display:flex;align-items:baseline;gap:7px}
+.kv .v.btc{color:var(--btc)}
+
+/* ---- cards ---- */
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.card{
+  background:var(--surface);border:1px solid var(--line-soft);border-radius:12px;
+  padding:16px 18px;box-shadow:var(--shadow);
+  transition:border-color .2s,transform .2s;
+}
+.card:hover{border-color:var(--line);transform:translateY(-2px)}
+.card .top{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.card svg{width:14px;height:14px;stroke:var(--txt-3);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.card .lb{font-size:.68rem;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--txt-3)}
+.card .val{font-size:1.45rem;font-weight:600;letter-spacing:-.015em;line-height:1.15}
+.card .val .of{font-size:.85rem;color:var(--txt-3);font-weight:400}
+.card .val.o{color:var(--btc)}
+.card .val.pos{color:var(--pos)}
+.card .val.neg{color:var(--neg)}
+.card .sub{font-size:.75rem;color:var(--txt-2);margin-top:6px}
+.card .sub b{color:var(--txt);font-weight:600}
+
+/* ---- charts ---- */
+.panel{
+  background:var(--surface);border:1px solid var(--line);border-radius:14px;
+  padding:20px 22px 14px;box-shadow:var(--shadow);margin-bottom:14px;
+}
+.panel h2{font-size:.95rem;font-weight:600;letter-spacing:-.01em;margin-bottom:2px}
+.panel .hint{font-size:.78rem;color:var(--txt-3);margin-bottom:12px}
+.chart{width:100%;height:340px}
+
+footer{margin-top:34px;padding-top:20px;border-top:1px solid var(--line-soft);text-align:center;font-size:.78rem;color:var(--txt-3)}
+footer a{color:var(--txt-2)}
+
+/* ---- responsive ---- */
+@media(max-width:1000px){
+  .hero{grid-template-columns:1fr;gap:22px;padding:22px}
+  .hero-r{border-left:none;border-top:1px solid var(--line);padding-left:0;padding-top:20px}
+  .grid{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:640px){
+  body{padding:18px 14px 30px}
+  .head h1{font-size:1.25rem}
+  .pnl .big{font-size:2.3rem}
+  .card .val{font-size:1.25rem}
+  .chart{height:280px}
+  .panel{padding:16px 14px 10px}
+}
+@media(max-width:380px){
+  .grid{grid-template-columns:1fr}
+}
+@media(prefers-reduced-motion:reduce){
+  *{transition:none!important;animation:none!important}
+}
+"""
+
+# ===== JS (string plano: los datos entran por un unico bloque JSON) =====
+DASHBOARD_JS = """
+// ---- tema ----
+function themeIcon(t){
+  var s=document.getElementById('theme-icon');
+  s.querySelector('.i-sun').style.display   = t==='dark' ? '' : 'none';
+  s.querySelector('.i-moon').style.display  = t==='dark' ? 'none' : '';
+}
+function toggleTheme(){
+  var h=document.documentElement;
+  var next = h.getAttribute('data-theme')==='dark' ? 'light' : 'dark';
+  h.setAttribute('data-theme',next);
+  try{ localStorage.setItem('theme',next); }catch(e){}
+  themeIcon(next);
+  renderCharts();
+}
+themeIcon(document.documentElement.getAttribute('data-theme'));
+
+// ---- paleta segun tema ----
+function palette(){
+  var dark = document.documentElement.getAttribute('data-theme')==='dark';
+  return dark
+    ? {txt:'#9aa7b8', faint:'#6b7889', grid:'#222835', tipBg:'#161b22', tipBorder:'#2a3140', tipTxt:'#e6edf3',
+       accent:'#6e8ef7', btc:'#f7931a', pos:'#3fb950', neg:'#f85149', zoomFill:'rgba(110,142,247,.12)'}
+    : {txt:'#5b6779', faint:'#8b97a8', grid:'#e7ebf2', tipBg:'#ffffff', tipBorder:'#dde2ec', tipTxt:'#131824',
+       accent:'#4257b2', btc:'#e07c0a', pos:'#18794e', neg:'#c93c37', zoomFill:'rgba(66,87,178,.10)'};
+}
+var usd0 = function(v){ return '$' + Math.round(v).toLocaleString('en-US'); };
+var usd2 = function(v){ return '$' + v.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); };
+function fade(hex,a){
+  var r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  return 'rgba('+r+','+g+','+b+','+a+')';
+}
+function area(hex){
+  return {type:'linear',x:0,y:0,x2:0,y2:1,colorStops:[{offset:0,color:fade(hex,.28)},{offset:1,color:fade(hex,.02)}]};
+}
+
+// ---- base comun de los 3 graficos ----
+function base(p, zoomStart){
+  return {
+    animationDuration: 700,
+    textStyle:{fontFamily:'Inter,-apple-system,sans-serif'},
+    grid:{left:8,right:16,top:44,bottom:58,containLabel:true},
+    tooltip:{
+      trigger:'axis',
+      backgroundColor:p.tipBg, borderColor:p.tipBorder, borderWidth:1,
+      padding:[9,12],
+      textStyle:{color:p.tipTxt,fontSize:12},
+      axisPointer:{type:'line',lineStyle:{color:p.faint,width:1,type:'dashed'}},
+      extraCssText:'box-shadow:0 6px 20px rgba(0,0,0,.18);border-radius:8px'
+    },
+    legend:{top:2,left:0,icon:'roundRect',itemWidth:9,itemHeight:9,itemGap:16,
+            textStyle:{color:p.txt,fontSize:12}},
+    xAxis:{
+      type:'category', data:DATA.labels, boundaryGap:false,
+      axisLine:{lineStyle:{color:p.grid}},
+      axisTick:{show:false},
+      axisLabel:{color:p.faint,fontSize:11,hideOverlap:true,margin:12},
+      splitLine:{show:false}
+    },
+    dataZoom:[
+      {type:'inside', start:zoomStart, end:100, zoomOnMouseWheel:'shift'},
+      {type:'slider', start:zoomStart, end:100, height:26, bottom:8,
+       borderColor:'transparent', backgroundColor:'transparent',
+       fillerColor:p.zoomFill, showDetail:false,
+       moveHandleSize:0, brushSelect:false,
+       handleSize:'80%', handleStyle:{color:p.tipBg,borderColor:p.accent,borderWidth:1.5,shadowBlur:0},
+       dataBackground:{lineStyle:{color:p.faint,width:1,opacity:.5},areaStyle:{color:p.faint,opacity:.12}},
+       selectedDataBackground:{lineStyle:{color:p.accent,width:1},areaStyle:{color:p.accent,opacity:.2}}}
+    ]
+  };
+}
+function yAxis(p, fmt){
+  return {
+    type:'value', scale:true,
+    axisLine:{show:false}, axisTick:{show:false},
+    axisLabel:{color:p.faint,fontSize:11,formatter:fmt},
+    splitLine:{lineStyle:{color:p.grid,type:'dashed'}}
+  };
+}
+
+// ---- graficos ----
+var charts = {};
+function renderCharts(){
+  try{
+    var p = palette();
+    Object.keys(charts).forEach(function(k){ if(charts[k]) charts[k].dispose(); });
+    charts = {};
+
+    // 1. DCA: invertido vs valor
+    charts.dca = echarts.init(document.getElementById('chart-dca'));
+    charts.dca.setOption(Object.assign(base(p,0),{
+      yAxis: yAxis(p, function(v){ return usd0(v); }),
+      tooltip: Object.assign(base(p,0).tooltip,{
+        formatter:function(ps){
+          var i=ps[0].dataIndex, d=DATA.pnl[i], pct=DATA.pnlPct[i];
+          var c = d>=0 ? p.pos : p.neg;
+          var out = '<b>'+DATA.fechas[i]+'</b>';
+          ps.forEach(function(s){ out += '<br/>'+s.marker+' '+s.seriesName+': <b>'+usd2(s.value)+'</b>'; });
+          out += '<br/><span style="color:'+c+'">&#9679; Resultado: <b>'+(d>=0?'+':'-')+usd2(Math.abs(d))
+               + ' ('+(d>=0?'+':'')+pct.toFixed(2)+'%)</b></span>';
+          return out;
+        }
+      }),
+      series:[
+        {name:'Invertido', type:'line', data:DATA.invertido, smooth:true, symbol:'none',
+         lineStyle:{width:2, color:p.accent, type:'dashed'}, itemStyle:{color:p.accent}},
+        {name:'Valor del portafolio', type:'line', data:DATA.valor, smooth:true, symbol:'none',
+         lineStyle:{width:2.5, color:p.btc}, itemStyle:{color:p.btc}, areaStyle:{color:area(p.btc)},
+         emphasis:{focus:'series'}}
+      ]
+    }));
+
+    // 2. Resultado acumulado (P&L), partido en tramos por signo para colorearlo
+    var pnlPos = DATA.pnl.map(function(v){ return v >= 0 ? v : null; });
+    var pnlNeg = DATA.pnl.map(function(v){ return v <= 0 ? v : null; });
+    charts.pnl = echarts.init(document.getElementById('chart-pnl'));
+    charts.pnl.setOption(Object.assign(base(p,0),{
+      legend:{show:false},
+      grid:{left:8,right:16,top:20,bottom:58,containLabel:true},
+      yAxis: yAxis(p, function(v){ return (v>=0?'+':'-') + '$' + Math.abs(Math.round(v)).toLocaleString('en-US'); }),
+      tooltip: Object.assign(base(p,0).tooltip,{
+        formatter:function(ps){
+          var i=ps[0].dataIndex, d=DATA.pnl[i], pct=DATA.pnlPct[i];
+          var c = d>=0 ? p.pos : p.neg;
+          return '<b>'+DATA.fechas[i]+'</b><br/><span style="color:'+c+'">&#9679; '
+               + (d>=0?'+':'-')+usd2(Math.abs(d))+' <b>('+(d>=0?'+':'')+pct.toFixed(2)+'%)</b></span>';
+        }
+      }),
+      series:[
+        {
+          name:'Ganancia', type:'line', data:pnlPos, smooth:true, symbol:'none',
+          connectNulls:false,
+          itemStyle:{color:p.pos}, lineStyle:{width:2.5, color:p.pos},
+          areaStyle:{color:area(p.pos), origin:0},
+          markLine:{
+            silent:true, symbol:'none',
+            data:[{yAxis:0}],
+            lineStyle:{color:p.faint,type:'solid',width:1},
+            label:{show:false}
+          }
+        },
+        {
+          name:'Pérdida', type:'line', data:pnlNeg, smooth:true, symbol:'none',
+          connectNulls:false,
+          itemStyle:{color:p.neg}, lineStyle:{width:2.5, color:p.neg},
+          areaStyle:{color:area(p.neg), origin:0}
+        }
+      ]
+    }));
+
+    // 3. Precio de BTC + precio promedio + mejor/peor compra
+    charts.price = echarts.init(document.getElementById('chart-price'));
+    charts.price.setOption(Object.assign(base(p,0),{
+      legend:{show:false},
+      grid:{left:8,right:16,top:20,bottom:58,containLabel:true},
+      yAxis: yAxis(p, function(v){ return usd0(v); }),
+      tooltip: Object.assign(base(p,0).tooltip,{
+        formatter:function(ps){
+          var i=ps[0].dataIndex;
+          var diff = (ps[0].value/DATA.precioPromedio - 1)*100;
+          var c = diff>=0 ? p.pos : p.neg;
+          return '<b>'+DATA.fechas[i]+'</b><br/>&#9679; BTC: <b>'+usd2(ps[0].value)+'</b>'
+               + '<br/><span style="color:'+c+'">'+(diff>=0?'+':'')+diff.toFixed(1)+'% vs tu promedio</span>'
+               + '<br/><span style="color:'+p.faint+'">Compraste '+DATA.sats[i].toLocaleString('en-US')+' sats</span>';
+        }
+      }),
+      series:[{
+        name:'BTC/USD', type:'line', data:DATA.precio, smooth:true, symbol:'none',
+        lineStyle:{width:2.5,color:p.btc}, itemStyle:{color:p.btc}, areaStyle:{color:area(p.btc)},
+        markLine:{
+          silent:true, symbol:'none',
+          data:[{yAxis:DATA.precioPromedio, name:'Promedio'}],
+          lineStyle:{color:p.accent,type:'dashed',width:1.5},
+          label:{formatter:'Tu promedio  '+usd0(DATA.precioPromedio), position:'insideEndTop',
+                 color:p.accent, fontSize:11, fontWeight:600}
+        },
+        markPoint:{
+          symbol:'circle', symbolSize:10,
+          data:[
+            {name:'Mejor compra', coord:[DATA.mejorIdx, DATA.mejorPrecio],
+             itemStyle:{color:p.pos, borderColor:p.tipBg, borderWidth:2},
+             label:{show:true, formatter:'Mejor', position:'bottom', distance:6,
+                    color:p.pos, fontSize:10, fontWeight:600}},
+            {name:'Peor compra', coord:[DATA.peorIdx, DATA.peorPrecio],
+             itemStyle:{color:p.neg, borderColor:p.tipBg, borderWidth:2},
+             label:{show:true, formatter:'Peor', position:'top', distance:6,
+                    color:p.neg, fontSize:10, fontWeight:600}}
+          ]
+        },
+        emphasis:{focus:'series'}
+      }]
+    }));
+  }catch(e){
+    console.error('Error al renderizar graficos:', e);
+  }
+}
+
+var rt;
+window.addEventListener('resize', function(){
+  clearTimeout(rt);
+  rt = setTimeout(function(){
+    Object.keys(charts).forEach(function(k){ if(charts[k]) charts[k].resize(); });
+  }, 120);
+});
+
+if(document.readyState === 'loading'){
+  document.addEventListener('DOMContentLoaded', renderCharts);
+}else{
+  renderCharts();
+}
+"""
+
+
 def generate_dashboard(df):
-    """Genera el dashboard HTML mejorado con todas las nuevas features"""
+    """Genera el dashboard HTML estatico a partir del historico de compras"""
+    import json
     from datetime import datetime
 
-    # ===== MÉTRICAS BÁSICAS =====
+    # ===== METRICAS BASICAS =====
     total_dias = len(df)
     total_invertido = total_dias * 2.00
     btc_total = df['btc_acumulado'].iloc[-1]
-    satoshis = int(btc_total * 100_000_000)
+    satoshis = int(round(btc_total * 100_000_000))
     precio_actual = df['precio_btc_usd'].iloc[-1]
     valor_actual = df['valor_actual_usd'].iloc[-1]
     ganancia = valor_actual - total_invertido
@@ -175,954 +531,272 @@ def generate_dashboard(df):
     else:
         total_comisiones = total_invertido * COMISION_PORCENTAJE
     pct_comisiones = (total_comisiones / total_invertido) * 100 if total_invertido > 0 else 0
-    ganancia_neta = ganancia - total_comisiones
-    porcentaje_neto = (ganancia_neta / total_invertido) * 100 if total_invertido > 0 else 0
-    color_ganancia_neta = "#10b981" if ganancia_neta >= 0 else "#ef4444"
-    simbolo_neto = "+" if ganancia_neta >= 0 else ""
 
-    # ===== MEJORA 1: PRECIO PROMEDIO DE COMPRA =====
+    # El BTC acumulado ya se compra neto de comision (btc = (usd - fee) / precio),
+    # asi que `ganancia` es el resultado real: restarle los fees otra vez seria
+    # contarlos dos veces. La bruta se reconstruye comprando sin comision cada dia
+    # -- los fees cuestan mas que su valor nominal porque ese BTC que no se compro
+    # tambien se habria revalorizado.
+    ganancia_neta = ganancia
+    porcentaje_neto = porcentaje
+    btc_sin_fees = float(sum(2.00 / precio for precio in df['precio_btc_usd'] if precio > 0))
+    ganancia_bruta = btc_sin_fees * precio_actual - total_invertido
+    costo_real_fees = ganancia_bruta - ganancia_neta
+
+    # ===== PRECIO PROMEDIO DE COMPRA =====
     precio_promedio = total_invertido / btc_total if btc_total > 0 else 0
     diff_vs_promedio = ((precio_actual - precio_promedio) / precio_promedio * 100) if precio_promedio > 0 else 0
 
-    # ===== MEJORA 3: INDICADORES DE TENDENCIA =====
-    if len(df) > 1:
+    # ===== VARIACION 24 H =====
+    if total_dias > 1:
         valor_ayer = df['valor_actual_usd'].iloc[-2]
-        cambio_valor = valor_actual - valor_ayer
-        tendencia_valor = "↗️" if cambio_valor > 0 else "↘️" if cambio_valor < 0 else "→"
-
         precio_ayer = df['precio_btc_usd'].iloc[-2]
-        cambio_precio = precio_actual - precio_ayer
-        tendencia_precio = "↗️" if cambio_precio > 0 else "↘️" if cambio_precio < 0 else "→"
+        # el valor de ayer no incluye el aporte de hoy: se descuenta para comparar manzanas con manzanas
+        cambio_valor = (valor_actual - 2.00) - valor_ayer
+        cambio_valor_pct = (cambio_valor / valor_ayer * 100) if valor_ayer > 0 else 0
+        cambio_precio_pct = ((precio_actual - precio_ayer) / precio_ayer * 100) if precio_ayer > 0 else 0
     else:
-        tendencia_valor = "→"
-        tendencia_precio = "→"
-        cambio_valor = 0
-        cambio_precio = 0
+        cambio_valor = cambio_valor_pct = cambio_precio_pct = 0.0
 
-    # ===== MEJORA 4: ESTADÍSTICAS =====
-    mejor_dia_idx = df['btc_comprados'].idxmax()
-    peor_dia_idx = df['btc_comprados'].idxmin()
+    # ===== MEJOR / PEOR COMPRA =====
+    mejor_idx = int(df['btc_comprados'].values.argmax())
+    peor_idx = int(df['btc_comprados'].values.argmin())
+    mejor_precio = float(df['precio_btc_usd'].iloc[mejor_idx])
+    peor_precio = float(df['precio_btc_usd'].iloc[peor_idx])
+    mejor_sats = int(round(df['btc_comprados'].iloc[mejor_idx] * 100_000_000))
+    peor_sats = int(round(df['btc_comprados'].iloc[peor_idx] * 100_000_000))
+    mejor_fecha = pd.to_datetime(df['fecha'].iloc[mejor_idx]).strftime("%d/%m/%Y")
+    peor_fecha = pd.to_datetime(df['fecha'].iloc[peor_idx]).strftime("%d/%m/%Y")
 
-    mejor_dia_fecha = str(df.loc[mejor_dia_idx, 'fecha'])
-    mejor_dia_btc = df.loc[mejor_dia_idx, 'btc_comprados']
-    mejor_dia_precio = df.loc[mejor_dia_idx, 'precio_btc_usd']
+    # ===== DCA VS COMPRAR TODO EL PRIMER DIA (LUMP SUM) =====
+    # misma comision que paga el DCA, para que la comparacion sea justa
+    precio_inicial = float(df['precio_btc_usd'].iloc[0])
+    btc_lump = (total_invertido * (1 - COMISION_PORCENTAJE)) / precio_inicial if precio_inicial > 0 else 0
+    valor_lump = btc_lump * precio_actual
+    dca_ventaja = valor_actual - valor_lump
+    dca_ventaja_pct = (dca_ventaja / valor_lump * 100) if valor_lump > 0 else 0
 
-    peor_dia_fecha = str(df.loc[peor_dia_idx, 'fecha'])
-    peor_dia_btc = df.loc[peor_dia_idx, 'btc_comprados']
-    peor_dia_precio = df.loc[peor_dia_idx, 'precio_btc_usd']
+    # ===== CAIDA MAXIMA (peor bajon del portafolio desde un pico) =====
+    equity = df['valor_actual_usd'].astype(float)
+    pico = equity.cummax()
+    caidas = (equity / pico - 1) * 100
+    drawdown_max = float(caidas.min())
+    drawdown_fecha = pd.to_datetime(df['fecha'].iloc[int(caidas.values.argmin())]).strftime("%d/%m/%Y")
 
-    racha_dias = total_dias
+    # ===== DIAS EN VERDE =====
+    invertido_serie = [(i + 1) * 2.00 for i in range(total_dias)]
+    dias_verde = int(sum(1 for v, inv in zip(equity, invertido_serie) if v > inv))
+    pct_verde = (dias_verde / total_dias * 100) if total_dias > 0 else 0
 
-    # Formatear racha en meses/años
-    if racha_dias < 30:
-        racha_formato = f"{racha_dias} día{'s' if racha_dias != 1 else ''}"
-    elif racha_dias < 365:
-        meses = racha_dias // 30
-        racha_formato = f"{meses} mes{'es' if meses != 1 else ''}"
-    else:
-        años = racha_dias // 365
-        meses_restantes = (racha_dias % 365) // 30
-        if meses_restantes > 0:
-            racha_formato = f"{años} año{'s' if años != 1 else ''} y {meses_restantes} mes{'es' if meses_restantes != 1 else ''}"
-        else:
-            racha_formato = f"{años} año{'s' if años != 1 else ''}"
+    fecha_inicio = pd.to_datetime(df['fecha'].iloc[0]).strftime("%d/%m/%Y")
 
-    # Colores
-    color_ganancia = "#10b981" if ganancia >= 0 else "#ef4444"
-    simbolo = "+" if ganancia >= 0 else ""
-    emoji_tendencia = "📈" if ganancia >= 0 else "📉"
+    # ===== SERIES PARA LOS GRAFICOS =====
+    chart_data = {
+        "labels": [pd.to_datetime(f).strftime("%d/%m") for f in df['fecha']],
+        "fechas": [pd.to_datetime(f).strftime("%d/%m/%Y") for f in df['fecha']],
+        "invertido": [round(v, 2) for v in invertido_serie],
+        "valor": [round(float(v), 2) for v in equity],
+        "precio": [float(v) for v in df['precio_btc_usd']],
+        "pnl": [round(float(v) - inv, 2) for v, inv in zip(equity, invertido_serie)],
+        "pnlPct": [round((float(v) - inv) / inv * 100, 2) for v, inv in zip(equity, invertido_serie)],
+        "sats": [int(round(v * 100_000_000)) for v in df['btc_comprados']],
+        "precioPromedio": round(precio_promedio, 2),
+        "mejorIdx": mejor_idx, "mejorPrecio": mejor_precio,
+        "peorIdx": peor_idx, "peorPrecio": peor_precio,
+    }
 
-    # ===== DATOS PARA GRÁFICOS =====
-    # Generar labels en formato "14 Feb", "15 Feb", etc.
-    import locale
-    try:
-        locale.setlocale(locale.LC_TIME, 'es_ES.UTF-8')
-    except:
-        try:
-            locale.setlocale(locale.LC_TIME, 'es_ES')
-        except:
-            pass  # Si no está disponible, usar el locale por defecto
+    # ===== HELPERS DE FORMATO =====
+    def signo(v):
+        return "+" if v >= 0 else "−"
 
-    fechas_array = [pd.to_datetime(fecha).strftime("%d %b") for fecha in df['fecha']]
-    usd_acumulado_array = [(i + 1) * 2.00 for i in range(len(df))]
-    valor_btc_array = df['valor_actual_usd'].tolist()
-    precio_btc_array = df['precio_btc_usd'].tolist()
+    def money(v, dec=2):
+        return f"${abs(v):,.{dec}f}"
 
-    # Timestamp
-    timestamp = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+    def signed_money(v, dec=2):
+        return f"{signo(v)}{money(v, dec)}"
 
-    # ===== GENERAR HTML =====
+    def signed_pct(v, dec=2):
+        return f"{signo(v)}{abs(v):.{dec}f}%"
+
+    cls_pnl = "" if ganancia_neta >= 0 else " neg"
+    cls_24h = "" if cambio_valor >= 0 else " neg"
+    cls_precio24 = "" if cambio_precio_pct >= 0 else " neg"
+    pct_invertido_barra = min(100.0, (total_invertido / valor_actual * 100)) if valor_actual > 0 else 100.0
+    pct_pnl_barra = max(0.0, 100.0 - pct_invertido_barra)
+    color_pnl_barra = "var(--pos)" if ganancia_neta >= 0 else "var(--neg)"
+    cls_promedio = "pos" if diff_vs_promedio >= 0 else "neg"
+    txt_promedio = "arriba de" if diff_vs_promedio >= 0 else "abajo de"
+    cls_lump = "pos" if dca_ventaja >= 0 else "neg"
+    txt_lump = ("Ganás" if dca_ventaja >= 0 else "Perdés") + f" {abs(dca_ventaja_pct):.1f}% " + \
+               ("más" if dca_ventaja >= 0 else "menos") + " que comprando todo el primer día"
+
+    timestamp = datetime.now().strftime("%d/%m/%Y %H:%M")
+
+    # ===== HTML =====
     html_content = f"""<!DOCTYPE html>
 <html lang="es" data-theme="dark">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
-    <title>📊 Bitcoin DCA Tracker</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;800&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
-    <style>
-        :root {{
-            --bg-gradient-start: #667eea;
-            --bg-gradient-end: #764ba2;
-            --card-bg: rgba(255, 255, 255, 0.95);
-            --card-border: rgba(255, 255, 255, 0.3);
-            --text-primary: #1f2937;
-            --text-secondary: #6b7280;
-            --text-tertiary: #9ca3af;
-            --shadow: rgba(0, 0, 0, 0.1);
-            --shadow-hover: rgba(0, 0, 0, 0.2);
-        }}
-
-        [data-theme="dark"] {{
-            --bg-gradient-start: #1a1a2e;
-            --bg-gradient-end: #16213e;
-            --card-bg: rgba(30, 30, 46, 0.8);
-            --card-border: rgba(255, 255, 255, 0.1);
-            --text-primary: #f3f4f6;
-            --text-secondary: #d1d5db;
-            --text-tertiary: #9ca3af;
-            --shadow: rgba(0, 0, 0, 0.3);
-            --shadow-hover: rgba(0, 0, 0, 0.5);
-        }}
-
-        * {{
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }}
-
-        /* Mejoras para experiencia táctil en mobile */
-        * {{
-            -webkit-tap-highlight-color: transparent;
-            -webkit-touch-callout: none;
-        }}
-
-        html {{
-            -webkit-text-size-adjust: 100%;
-            text-size-adjust: 100%;
-        }}
-
-        body {{
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
-            background-attachment: fixed;
-            min-height: 100vh;
-            padding: 20px;
-            transition: background 0.3s ease;
-            animation: gradientShift 15s ease infinite;
-            background-size: 200% 200%;
-        }}
-
-        @keyframes gradientShift {{
-            0%, 100% {{ background-position: 0% 50%; }}
-            50% {{ background-position: 100% 50%; }}
-        }}
-
-        @keyframes fadeInUp {{
-            from {{
-                opacity: 0;
-                transform: translateY(20px);
-            }}
-            to {{
-                opacity: 1;
-                transform: translateY(0);
-            }}
-        }}
-
-        @keyframes pulse {{
-            0%, 100% {{ transform: scale(1); }}
-            50% {{ transform: scale(1.05); }}
-        }}
-
-        .container {{
-            max-width: 1400px;
-            margin: 0 auto;
-            animation: fadeInUp 0.6s ease;
-        }}
-
-        .header {{
-            text-align: center;
-            color: white;
-            margin-bottom: 40px;
-            position: relative;
-        }}
-
-        .header h1 {{
-            font-size: 3em;
-            margin-bottom: 10px;
-            font-weight: 700;
-            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-            animation: fadeInUp 0.6s ease 0.1s both;
-        }}
-
-        .header p {{
-            opacity: 0.95;
-            font-size: 1.1em;
-            font-weight: 400;
-            animation: fadeInUp 0.6s ease 0.2s both;
-        }}
-
-        /* MODO OSCURO - Toggle (Icono SVG minimalista) */
-        .theme-toggle {{
-            position: absolute;
-            top: 0;
-            right: 0;
-            background: var(--card-bg);
-            border: 1px solid var(--card-border);
-            backdrop-filter: blur(10px);
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            cursor: pointer;
-            box-shadow: 0 4px 12px var(--shadow);
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-        }}
-
-        .theme-toggle:hover {{
-            transform: translateY(-2px) rotate(20deg);
-            box-shadow: 0 6px 16px var(--shadow-hover);
-        }}
-
-        .theme-toggle svg {{
-            width: 24px;
-            height: 24px;
-            fill: none;
-            stroke: var(--text-primary);
-            stroke-width: 2;
-            stroke-linecap: round;
-            stroke-linejoin: round;
-            transition: all 0.3s ease;
-            pointer-events: none;
-        }}
-
-        .theme-toggle-text {{
-            display: none;
-        }}
-
-        /* Métricas Grid - Estilo compacto con bordes de color */
-        .metrics-grid {{
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-            gap: 14px;
-            margin-bottom: 30px;
-        }}
-
-        /* Cards con borde de color y separador */
-        .metric-card {{
-            background: var(--card-bg);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border-left: 4px solid #667eea;
-            padding: 18px 22px;
-            border-radius: 12px;
-            box-shadow: 0 4px 16px var(--shadow);
-            transition: all 0.3s ease;
-            position: relative;
-            animation: fadeInUp 0.6s ease both;
-            display: flex;
-            flex-direction: column;
-        }}
-
-        /* Colores de borde por card */
-        .metric-card:nth-child(1) {{
-            animation-delay: 0.1s;
-            border-left-color: #667eea;
-        }}
-        .metric-card:nth-child(2) {{
-            animation-delay: 0.15s;
-            border-left-color: #f7931a;
-        }}
-        .metric-card:nth-child(3) {{
-            animation-delay: 0.2s;
-            border-left-color: #10b981;
-        }}
-        .metric-card:nth-child(4) {{
-            animation-delay: 0.25s;
-            border-left-color: #ef4444;
-        }}
-        .metric-card:nth-child(5) {{
-            animation-delay: 0.3s;
-            border-left-color: #8b5cf6;
-        }}
-        .metric-card:nth-child(6) {{
-            animation-delay: 0.35s;
-            border-left-color: #06b6d4;
-        }}
-        .metric-card:nth-child(7) {{
-            animation-delay: 0.4s;
-            border-left-color: #f59e0b;
-        }}
-        .metric-card:nth-child(8) {{
-            animation-delay: 0.45s;
-            border-left-color: #ec4899;
-        }}
-
-        .metric-card:hover {{
-            transform: translateX(4px) translateY(-2px);
-            box-shadow: 0 8px 24px var(--shadow-hover);
-        }}
-
-        /* Label con separador (border-bottom) */
-        .metric-label {{
-            font-size: 0.7em;
-            color: var(--text-tertiary);
-            margin-bottom: 12px;
-            padding-bottom: 10px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.8px;
-            border-bottom: 1px solid var(--card-border);
-        }}
-
-        /* Tipografía monoespaciada para valores */
-        .metric-value {{
-            font-size: 2em;
-            font-weight: 800;
-            color: var(--text-primary);
-            margin: 8px 0 6px 0;
-            line-height: 1.1;
-            font-family: 'JetBrains Mono', 'SF Mono', 'Monaco', 'Consolas', monospace;
-        }}
-
-        .metric-subtitle {{
-            font-size: 0.75em;
-            color: var(--text-secondary);
-            font-weight: 500;
-        }}
-
-        /* Títulos de secciones */
-        .section-title {{
-            color: white;
-            font-size: 1.8em;
-            font-weight: 600;
-            margin: 40px 0 20px 0;
-            text-align: left;
-            opacity: 0.95;
-            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-        }}
-
-        /* Secciones de información */
-        .info-section {{
-            background: var(--card-bg);
-            backdrop-filter: blur(10px);
-            border-left: 4px solid #667eea;
-            padding: 28px 32px;
-            border-radius: 12px;
-            box-shadow: 0 4px 16px var(--shadow);
-            margin-bottom: 20px;
-            animation: fadeInUp 0.6s ease 0.4s both;
-            transition: all 0.3s ease;
-        }}
-
-        .info-section:hover {{
-            transform: translateX(4px) translateY(-2px);
-            box-shadow: 0 8px 24px var(--shadow-hover);
-        }}
-
-        .info-section:nth-of-type(1) {{
-            border-left-color: #8b5cf6;
-        }}
-
-        .info-section:nth-of-type(2) {{
-            border-left-color: #10b981;
-        }}
-
-        .info-section h2 {{
-            margin-bottom: 24px;
-            padding-bottom: 12px;
-            border-bottom: 1px solid var(--card-border);
-            color: var(--text-primary);
-            font-weight: 600;
-            font-size: 1.4em;
-        }}
-
-
-        /* Gráficos */
-        .chart-container {{
-            position: relative;
-            height: 400px;
-            margin-bottom: 30px;
-        }}
-
-        footer {{
-            text-align: center;
-            color: white;
-            opacity: 0.9;
-            margin-top: 40px;
-            padding: 24px;
-            font-weight: 400;
-            animation: fadeInUp 0.6s ease 0.5s both;
-        }}
-
-        /* ===== MOBILE RESPONSIVE - MEJORES PRÁCTICAS ===== */
-
-        /* Tablet y pantallas medianas */
-        @media (max-width: 1024px) {{
-            body {{
-                padding: 15px;
-            }}
-
-            .metrics-grid {{
-                grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-                gap: 12px;
-            }}
-
-            .section-title {{
-                font-size: 1.5em;
-                margin: 30px 0 15px 0;
-            }}
-        }}
-
-        /* Mobile */
-        @media (max-width: 768px) {{
-            body {{
-                padding: 12px;
-            }}
-
-            /* Header optimizado para mobile */
-            .header {{
-                margin-bottom: 30px;
-                padding-right: 55px;
-            }}
-
-            .header h1 {{
-                font-size: 1.75em;
-                margin-bottom: 8px;
-                line-height: 1.2;
-            }}
-
-            /* Botón dark mode - tamaño táctil óptimo */
-            .theme-toggle {{
-                width: 44px;
-                height: 44px;
-                top: 0;
-                right: 0;
-            }}
-
-            .theme-toggle svg {{
-                width: 20px;
-                height: 20px;
-            }}
-
-            /* Grid de 2 columnas en mobile */
-            .metrics-grid {{
-                grid-template-columns: repeat(2, 1fr);
-                gap: 10px;
-                margin-bottom: 20px;
-            }}
-
-            /* Cards optimizadas para 2 columnas en mobile */
-            .metric-card {{
-                padding: 14px 12px;
-                border-radius: 10px;
-                border-left-width: 3px;
-            }}
-
-            .metric-label {{
-                font-size: 0.6em;
-                margin-bottom: 8px;
-                padding-bottom: 6px;
-                letter-spacing: 0.5px;
-            }}
-
-            .metric-value {{
-                font-size: 1.4em;
-                margin: 5px 0 4px 0;
-            }}
-
-            .metric-subtitle {{
-                font-size: 0.65em;
-                line-height: 1.3;
-            }}
-
-            /* Section titles más compactos */
-            .section-title {{
-                font-size: 1.3em;
-                margin: 25px 0 12px 0;
-            }}
-
-            /* Info sections optimizadas */
-            .info-section {{
-                padding: 18px 20px;
-                border-radius: 10px;
-                margin-bottom: 16px;
-            }}
-
-            .info-section h2 {{
-                font-size: 1.2em;
-                margin-bottom: 18px;
-                padding-bottom: 10px;
-            }}
-
-            /* Gráficos responsivos */
-            .chart-container {{
-                height: 280px;
-                margin-bottom: 20px;
-            }}
-
-            /* Footer */
-            footer {{
-                margin-top: 30px;
-                padding: 20px;
-                font-size: 0.85em;
-            }}
-        }}
-
-        /* Mobile pequeño (iPhone SE, etc) */
-        @media (max-width: 375px) {{
-            body {{
-                padding: 10px;
-            }}
-
-            .header {{
-                padding-right: 50px;
-            }}
-
-            .header h1 {{
-                font-size: 1.5em;
-            }}
-
-            .theme-toggle {{
-                width: 40px;
-                height: 40px;
-                top: 0;
-            }}
-
-            .theme-toggle svg {{
-                width: 18px;
-                height: 18px;
-            }}
-
-            .metric-card {{
-                padding: 14px 16px;
-            }}
-
-            .metric-value {{
-                font-size: 1.4em;
-            }}
-
-            .section-title {{
-                font-size: 1.2em;
-            }}
-
-            .info-section {{
-                padding: 16px 18px;
-            }}
-
-            .chart-container {{
-                height: 240px;
-            }}
-        }}
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Bitcoin DCA Tracker</title>
+<meta name="description" content="Seguimiento diario de una estrategia DCA en Bitcoin: {total_dias} días, {money(total_invertido)} invertidos, resultado {signed_money(ganancia_neta)}.">
+<meta name="color-scheme" content="dark light">
+<meta name="theme-color" content="#0d1117" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f4f6fa" media="(prefers-color-scheme: light)">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta property="og:title" content="Bitcoin DCA Tracker">
+<meta property="og:description" content="{total_dias} días de DCA · {money(total_invertido)} invertidos · {signed_money(ganancia_neta)} ({signed_pct(porcentaje_neto)})">
+<meta property="og:type" content="website">
+<script>
+  // Aplica el tema guardado antes del primer pintado para evitar el flash
+  (function(){{
+    try{{
+      var t = localStorage.getItem('theme');
+      if(t) document.documentElement.setAttribute('data-theme', t);
+    }}catch(e){{}}
+  }})();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>{DASHBOARD_CSS}</style>
 </head>
 <body>
-    <div class="container">
-        <!-- Header -->
-        <div class="header">
-            <!-- Toggle de Modo Oscuro -->
-            <div class="theme-toggle" onclick="toggleTheme()">
-                <svg id="theme-icon" viewBox="0 0 24 24">
-                    <!-- Sol (modo dark) -->
-                    <g class="sun-icon">
-                        <circle cx="12" cy="12" r="4"/>
-                        <line x1="12" y1="1" x2="12" y2="3"/>
-                        <line x1="12" y1="21" x2="12" y2="23"/>
-                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
-                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-                        <line x1="1" y1="12" x2="3" y2="12"/>
-                        <line x1="21" y1="12" x2="23" y2="12"/>
-                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
-                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-                    </g>
-                    <!-- Luna (modo light) -->
-                    <path class="moon-icon" d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" style="visibility: hidden;"/>
-                </svg>
-            </div>
+<div class="wrap">
 
-            <h1>₿ Bitcoin DCA Tracker</h1>
-        </div>
-
-        <!-- Sección 1: Tu Inversión Actual -->
-        <h2 class="section-title">💰 Tu Inversión Actual</h2>
-        <div class="metrics-grid">
-            <div class="metric-card">
-                <div class="metric-label">💵 Total Invertido</div>
-                <div class="metric-value">${total_invertido:.2f}</div>
-                <div class="metric-subtitle">{total_dias} día{'s' if total_dias != 1 else ''} × $2 USD · Fees: ${total_comisiones:.3f}</div>
-            </div>
-
-            <div class="metric-card">
-                <div class="metric-label">₿ BTC Acumulado</div>
-                <div class="metric-value">{btc_total:.8f}</div>
-                <div class="metric-subtitle">Satoshis: {satoshis:,}</div>
-            </div>
-
-            <div class="metric-card">
-                <div class="metric-label">📈 Valor Actual</div>
-                <div class="metric-value">
-                    ${valor_actual:.2f}
-                </div>
-                <div class="metric-subtitle">BTC @ ${precio_actual:,.2f}</div>
-            </div>
-
-            <div class="metric-card">
-                <div class="metric-label">{emoji_tendencia} Ganancia Real (con fees)</div>
-                <div class="metric-value" style="color: {color_ganancia_neta}">{simbolo_neto}${ganancia_neta:.2f}</div>
-                <div class="metric-subtitle" style="color: {color_ganancia_neta}">{simbolo_neto}{porcentaje_neto:.2f}% · Bruta: {simbolo}${ganancia:.2f}</div>
-            </div>
-        </div>
-
-        <!-- Sección 2: Análisis Histórico -->
-        <h2 class="section-title">📊 Análisis Histórico</h2>
-        <div class="metrics-grid">
-            <div class="metric-card">
-                <div class="metric-label">📊 Precio Promedio</div>
-                <div class="metric-value">${precio_promedio:,.2f}</div>
-                <div class="metric-subtitle">
-                    {'+' if diff_vs_promedio >= 0 else ''}{diff_vs_promedio:.1f}% vs actual
-                </div>
-            </div>
-
-            <div class="metric-card">
-                <div class="metric-label">🏆 Mejor Día de Compra</div>
-                <div class="metric-value">${mejor_dia_precio:,.2f}</div>
-                <div class="metric-subtitle">{mejor_dia_fecha} · {mejor_dia_btc:.8f} BTC</div>
-            </div>
-
-            <div class="metric-card">
-                <div class="metric-label">📉 Peor Día de Compra</div>
-                <div class="metric-value">${peor_dia_precio:,.2f}</div>
-                <div class="metric-subtitle">{peor_dia_fecha} · {peor_dia_btc:.8f} BTC</div>
-            </div>
-
-            <div class="metric-card">
-                <div class="metric-label">🔥 Racha Consecutiva</div>
-                <div class="metric-value">{racha_formato}</div>
-                <div class="metric-subtitle">{racha_dias} día{'s' if racha_dias != 1 else ''} totales</div>
-            </div>
-
-            <div class="metric-card">
-                <div class="metric-label">💸 Comisiones Pagadas</div>
-                <div class="metric-value">${total_comisiones:.3f}</div>
-                <div class="metric-subtitle">{pct_comisiones:.1f}% del capital · {total_dias} transacción{'es' if total_dias != 1 else ''}</div>
-            </div>
-        </div>
-
-        <!-- Primer Gráfico - Evolución del DCA -->
-        <div class="info-section">
-            <h2>📊 Evolución del DCA</h2>
-            <div class="chart-container">
-                <div id="dcaChart" style="width: 100%; height: 100%;"></div>
-            </div>
-        </div>
-
-        <!-- Segundo Gráfico - Precio de Bitcoin -->
-        <div class="info-section">
-            <h2>💹 Precio de Bitcoin en el Tiempo</h2>
-            <div class="chart-container">
-                <div id="btcPriceChart" style="width: 100%; height: 100%;"></div>
-            </div>
-        </div>
-
-        <footer>
-            <p>@ Generado automáticamente · {timestamp}</p>
-        </footer>
+  <header class="head">
+    <div>
+      <h1><span class="b">&#8383;</span> Bitcoin DCA Tracker</h1>
+      <div class="meta">
+        <span>BTC <b class="mono">{money(precio_actual, 0)}</b></span>
+        <span class="pill sm{cls_precio24}">{signed_pct(cambio_precio_pct, 2)}</span>
+        <span class="dot"></span>
+        <span>Actualizado {timestamp}</span>
+      </div>
     </div>
+    <button class="theme-toggle" onclick="toggleTheme()" aria-label="Cambiar tema" title="Cambiar tema">
+      <svg id="theme-icon" viewBox="0 0 24 24">
+        <g class="i-sun">
+          <circle cx="12" cy="12" r="4"/>
+          <path d="M12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/>
+        </g>
+        <path class="i-moon" d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/>
+      </svg>
+    </button>
+  </header>
 
-    <script>
-        // ===== MODO OSCURO =====
-        function updateThemeIcon(theme) {{
-            const svg = document.getElementById('theme-icon');
-            const sunIcon = svg.querySelector('.sun-icon');
-            const moonIcon = svg.querySelector('.moon-icon');
+  <p class="sec">Posición</p>
+  <div class="hero">
+    <div class="hero-l">
+      <div class="lbl">Resultado neto · después de comisiones</div>
+      <div class="pnl">
+        <span class="big mono" style="color:{color_pnl_barra}">{signed_money(ganancia_neta)}</span>
+        <span class="pill{cls_pnl}">{signed_pct(porcentaje_neto)}</span>
+      </div>
+      <div class="hero-meta">
+        <span>Últimas 24 h</span>
+        <span class="pill sm{cls_24h}">{signed_money(cambio_valor)} · {signed_pct(cambio_valor_pct)}</span>
+        <span class="dot"></span>
+        <span>Bruta {signed_money(ganancia_bruta)} · las comisiones te costaron {money(costo_real_fees, 2)}</span>
+      </div>
+      <div class="bar">
+        <i style="background:var(--accent);width:{pct_invertido_barra:.1f}%"></i>
+        <i style="background:{color_pnl_barra};width:{pct_pnl_barra:.1f}%"></i>
+      </div>
+      <div class="barleg">
+        <span><i class="sw" style="background:var(--accent)"></i>Invertido {money(total_invertido)}</span>
+        <span><i class="sw" style="background:{color_pnl_barra}"></i>Resultado {signed_money(ganancia_neta)}</span>
+      </div>
+    </div>
+    <div class="hero-r">
+      <div class="kv"><span class="k">Valor actual</span><span class="v mono">{money(valor_actual)}</span></div>
+      <div class="kv"><span class="k">BTC acumulado</span><span class="v mono btc">{btc_total:.8f}</span></div>
+      <div class="kv"><span class="k">Satoshis</span><span class="v mono">{satoshis:,}</span></div>
+      <div class="kv"><span class="k">Precio promedio</span><span class="v mono">{money(precio_promedio, 0)}</span></div>
+    </div>
+  </div>
 
-            if (theme === 'dark') {{
-                // Modo dark: mostrar sol (para cambiar a light)
-                sunIcon.style.visibility = 'visible';
-                moonIcon.style.visibility = 'hidden';
-            }} else {{
-                // Modo light: mostrar luna (para cambiar a dark)
-                sunIcon.style.visibility = 'hidden';
-                moonIcon.style.visibility = 'visible';
-            }}
-        }}
+  <p class="sec">Tu estrategia</p>
+  <div class="grid">
+    <div class="card">
+      <div class="top">{ICONS['trend']}<span class="lb">Precio promedio</span></div>
+      <div class="val mono">{money(precio_promedio, 0)}</div>
+      <div class="sub">BTC hoy está <b class="{cls_promedio}">{abs(diff_vs_promedio):.1f}% {txt_promedio}</b> tu promedio</div>
+    </div>
+    <div class="card">
+      <div class="top">{ICONS['coin']}<span class="lb">Aporte diario</span></div>
+      <div class="val mono">$2.00</div>
+      <div class="sub">{total_dias} días sin interrumpir · desde {fecha_inicio}</div>
+    </div>
+    <div class="card">
+      <div class="top">{ICONS['clock']}<span class="lb">Comisiones</span></div>
+      <div class="val mono">{money(total_comisiones, 2)}</div>
+      <div class="sub">{pct_comisiones:.1f}% del capital · {total_dias} transacciones</div>
+    </div>
+    <div class="card">
+      <div class="top">{ICONS['bars']}<span class="lb">DCA vs todo de una</span></div>
+      <div class="val mono {cls_lump}">{signed_money(dca_ventaja)}</div>
+      <div class="sub">{txt_lump}</div>
+    </div>
+  </div>
 
-        // Cargar tema guardado
-        const savedTheme = localStorage.getItem('theme') || 'dark';
-        document.documentElement.setAttribute('data-theme', savedTheme);
-        updateThemeIcon(savedTheme);
+  <p class="sec">Rendimiento histórico</p>
+  <div class="grid">
+    <div class="card">
+      <div class="top">{ICONS['check']}<span class="lb">Mejor compra</span></div>
+      <div class="val mono o">{money(mejor_precio, 0)}</div>
+      <div class="sub">{mejor_fecha} · {mejor_sats:,} sats por $2</div>
+    </div>
+    <div class="card">
+      <div class="top">{ICONS['cross']}<span class="lb">Peor compra</span></div>
+      <div class="val mono o">{money(peor_precio, 0)}</div>
+      <div class="sub">{peor_fecha} · {peor_sats:,} sats por $2</div>
+    </div>
+    <div class="card">
+      <div class="top">{ICONS['dip']}<span class="lb">Caída máxima</span></div>
+      <div class="val mono neg">&minus;{abs(drawdown_max):.1f}%</div>
+      <div class="sub">Peor bajón desde un pico · {drawdown_fecha}</div>
+    </div>
+    <div class="card">
+      <div class="top">{ICONS['star']}<span class="lb">Días en verde</span></div>
+      <div class="val mono">{dias_verde} <span class="of">/ {total_dias}</span></div>
+      <div class="sub">{pct_verde:.0f}% del tiempo por encima de lo invertido</div>
+    </div>
+  </div>
 
-        // Datos desde Python
-        const labels = {fechas_array};
-        const dataInvertido = {usd_acumulado_array};
-        const dataValorBTC = {valor_btc_array};
-        const dataPrecioBTC = {precio_btc_array};
+  <p class="sec">Evolución</p>
 
-        // ===== APACHE ECHARTS - GRÁFICOS =====
+  <div class="panel">
+    <h2>Invertido vs. valor del portafolio</h2>
+    <p class="hint">Arrastrá la barra inferior para acotar el período · shift + rueda para hacer zoom</p>
+    <div id="chart-dca" class="chart"></div>
+  </div>
 
-        // Configuración de tema según modo
-        function getEChartsTheme() {{
-            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-            return isDark ? 'dark' : null; // null es el tema light por defecto
-        }}
+  <div class="panel">
+    <h2>Resultado acumulado</h2>
+    <p class="hint">Ganancia o pérdida sobre el total invertido hasta cada día</p>
+    <div id="chart-pnl" class="chart"></div>
+  </div>
 
-        // Calcular rango dinámico para precio BTC (margen del 2%)
-        function getBTCPriceRange() {{
-            const min = Math.min(...dataPrecioBTC);
-            const max = Math.max(...dataPrecioBTC);
-            const range = max - min;
-            const margin = range * 0.5; // 50% de margen arriba y abajo
-            return {{
-                min: Math.floor(min - margin),
-                max: Math.ceil(max + margin)
-            }};
-        }}
+  <div class="panel">
+    <h2>Precio de Bitcoin</h2>
+    <p class="hint">La línea punteada es tu precio promedio de compra</p>
+    <div id="chart-price" class="chart"></div>
+  </div>
 
-        // Calcular rango dinámico para DCA (comenzar cerca del primer valor)
-        function getDCARange() {{
-            const allValues = [...dataInvertido, ...dataValorBTC];
-            const min = Math.min(...allValues);
-            const max = Math.max(...allValues);
-            const range = max - min;
-            const margin = range * 0.3; // 30% de margen
-            return {{
-                min: Math.max(0, Math.floor(min - margin)),
-                max: Math.ceil(max + margin)
-            }};
-        }}
+  <footer>
+    <p>Generado automáticamente · {timestamp} · datos de CoinGecko</p>
+  </footer>
+</div>
 
-        let dcaChart, btcPriceChart;
-
-        // Inicializar gráficos con ECharts
-        function initCharts() {{
-            try {{
-                const theme = getEChartsTheme();
-
-                // Destruir instancias previas si existen
-                if (dcaChart) dcaChart.dispose();
-                if (btcPriceChart) btcPriceChart.dispose();
-
-            // Gráfico 1: Evolución del DCA
-            dcaChart = echarts.init(document.getElementById('dcaChart'), theme);
-            dcaChart.setOption({{
-                animation: true,
-                animationDuration: 1000,
-                animationEasing: 'cubicOut',
-                tooltip: {{
-                    trigger: 'axis',
-                    axisPointer: {{
-                        type: 'cross',
-                        crossStyle: {{
-                            color: '#667eea'
-                        }}
-                    }},
-                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                    borderColor: '#667eea',
-                    borderWidth: 1,
-                    textStyle: {{ fontSize: 13 }},
-                    formatter: function(params) {{
-                        let result = params[0].name + '<br/>';
-                        params.forEach(item => {{
-                            result += item.marker + ' ' + item.seriesName + ': $' +
-                                     item.value.toFixed(2) + '<br/>';
-                        }});
-                        return result;
-                    }}
-                }},
-                legend: {{
-                    data: ['💵 USD Invertidos', '₿ Valor de Bitcoins'],
-                    top: 10,
-                    textStyle: {{ fontSize: 13 }}
-                }},
-                grid: {{
-                    left: '3%',
-                    right: '4%',
-                    bottom: '3%',
-                    top: 60,
-                    containLabel: true
-                }},
-                xAxis: {{
-                    type: 'category',
-                    data: labels,
-                    boundaryGap: false, // Comienza justo en el primer punto
-                    axisLabel: {{ rotate: 45 }},
-                    axisLine: {{ show: false }}, // Sin línea del eje
-                    axisTick: {{ show: false }}, // Sin ticks
-                    splitLine: {{ show: false }} // Sin líneas de cuadrícula
-                }},
-                yAxis: {{
-                    type: 'value',
-                    scale: true,
-                    min: getDCARange().min,
-                    max: getDCARange().max,
-                    axisLabel: {{
-                        formatter: '${{value}}'
-                    }},
-                    axisLine: {{ show: false }}, // Sin línea del eje
-                    axisTick: {{ show: false }}, // Sin ticks
-                    splitLine: {{ show: false }} // Sin líneas de cuadrícula
-                }},
-                series: [
-                    {{
-                        name: '💵 USD Invertidos',
-                        type: 'line',
-                        data: dataInvertido,
-                        smooth: true,
-                        lineStyle: {{ width: 3, color: '#667eea' }},
-                        itemStyle: {{ color: '#667eea' }},
-                        areaStyle: {{
-                            color: {{
-                                type: 'linear',
-                                x: 0, y: 0, x2: 0, y2: 1,
-                                colorStops: [
-                                    {{ offset: 0, color: 'rgba(102, 126, 234, 0.3)' }},
-                                    {{ offset: 1, color: 'rgba(102, 126, 234, 0.05)' }}
-                                ]
-                            }}
-                        }},
-                        emphasis: {{ focus: 'series' }}
-                    }},
-                    {{
-                        name: '₿ Valor de Bitcoins',
-                        type: 'line',
-                        data: dataValorBTC,
-                        smooth: true,
-                        lineStyle: {{ width: 3, color: '#f7931a' }},
-                        itemStyle: {{ color: '#f7931a' }},
-                        areaStyle: {{
-                            color: {{
-                                type: 'linear',
-                                x: 0, y: 0, x2: 0, y2: 1,
-                                colorStops: [
-                                    {{ offset: 0, color: 'rgba(247, 147, 26, 0.3)' }},
-                                    {{ offset: 1, color: 'rgba(247, 147, 26, 0.05)' }}
-                                ]
-                            }}
-                        }},
-                        emphasis: {{ focus: 'series' }}
-                    }}
-                ]
-            }});
-
-            // Gráfico 2: Precio de Bitcoin
-            btcPriceChart = echarts.init(document.getElementById('btcPriceChart'), theme);
-            btcPriceChart.setOption({{
-                animation: true,
-                animationDuration: 1000,
-                animationEasing: 'cubicOut',
-                tooltip: {{
-                    trigger: 'axis',
-                    axisPointer: {{
-                        type: 'cross',
-                        crossStyle: {{
-                            color: '#10b981'
-                        }}
-                    }},
-                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                    borderColor: '#10b981',
-                    borderWidth: 1,
-                    textStyle: {{ fontSize: 13 }},
-                    formatter: function(params) {{
-                        return params[0].name + '<br/>' +
-                               params[0].marker + ' Precio: $' +
-                               params[0].value.toLocaleString('en-US', {{minimumFractionDigits: 2}});
-                    }}
-                }},
-                legend: {{
-                    data: ['💰 Precio de Bitcoin (USD)'],
-                    top: 10,
-                    textStyle: {{ fontSize: 13 }}
-                }},
-                grid: {{
-                    left: '3%',
-                    right: '4%',
-                    bottom: '3%',
-                    top: 60,
-                    containLabel: true
-                }},
-                xAxis: {{
-                    type: 'category',
-                    data: labels,
-                    boundaryGap: false, // Comienza justo en el primer punto
-                    axisLabel: {{ rotate: 45 }},
-                    axisLine: {{ show: false }}, // Sin línea del eje
-                    axisTick: {{ show: false }}, // Sin ticks
-                    splitLine: {{ show: false }} // Sin líneas de cuadrícula
-                }},
-                yAxis: {{
-                    type: 'value',
-                    scale: true,
-                    min: getBTCPriceRange().min,
-                    max: getBTCPriceRange().max,
-                    axisLabel: {{
-                        formatter: function(value) {{
-                            return '$' + value.toLocaleString('en-US', {{maximumFractionDigits: 0}});
-                        }}
-                    }},
-                    axisLine: {{ show: false }}, // Sin línea del eje
-                    axisTick: {{ show: false }}, // Sin ticks
-                    splitLine: {{ show: false }} // Sin líneas de cuadrícula
-                }},
-                series: [{{
-                    name: '💰 Precio de Bitcoin (USD)',
-                    type: 'line',
-                    data: dataPrecioBTC,
-                    smooth: true,
-                    lineStyle: {{ width: 3, color: '#10b981' }},
-                    itemStyle: {{ color: '#10b981' }},
-                    areaStyle: {{
-                        color: {{
-                            type: 'linear',
-                            x: 0, y: 0, x2: 0, y2: 1,
-                            colorStops: [
-                                {{ offset: 0, color: 'rgba(16, 185, 129, 0.3)' }},
-                                {{ offset: 1, color: 'rgba(16, 185, 129, 0.05)' }}
-                            ]
-                        }}
-                    }},
-                    emphasis: {{ focus: 'series' }}
-                }}]
-            }});
-
-                // Responsive automático
-                window.addEventListener('resize', function() {{
-                    if (dcaChart) dcaChart.resize();
-                    if (btcPriceChart) btcPriceChart.resize();
-                }});
-            }} catch (error) {{
-                console.error('Error al inicializar gráficos:', error);
-                // Aunque falle, el resto del sitio debe funcionar
-            }}
-        }}
-
-        // Función actualizada de toggle theme
-        function toggleTheme() {{
-            const html = document.documentElement;
-            const currentTheme = html.getAttribute('data-theme');
-            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-
-            html.setAttribute('data-theme', newTheme);
-            localStorage.setItem('theme', newTheme);
-            updateThemeIcon(newTheme);
-
-            // Recrear gráficos con nuevo tema
-            initCharts();
-        }}
-
-        // Inicializar gráficos cuando el DOM esté completamente cargado
-        if (document.readyState === 'loading') {{
-            document.addEventListener('DOMContentLoaded', initCharts);
-        }} else {{
-            // DOM ya está listo, ejecutar inmediatamente
-            initCharts();
-        }}
-    </script>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+<script>
+const DATA = {json.dumps(chart_data)};
+{DASHBOARD_JS}
+</script>
 </body>
 </html>"""
 
@@ -1131,6 +805,7 @@ def generate_dashboard(df):
         f.write(html_content)
 
     log_message(f"✓ Dashboard generado en {DASHBOARD_FILE}")
+
 
 if __name__ == "__main__":
     update_btc_data()
