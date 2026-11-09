@@ -102,6 +102,11 @@ body{
 .kv .v{font-size:1.05rem;font-weight:600;display:flex;align-items:baseline;gap:7px}
 .kv .v.btc{color:var(--btc)}
 
+.hero .big{font-size:3.6rem}
+.res{display:flex;gap:30px;margin-top:20px;flex-wrap:wrap}
+.res>div{display:flex;flex-direction:column;gap:4px}
+.rk{font-size:.72rem;color:var(--txt-3);text-transform:uppercase;letter-spacing:.06em;font-weight:600}
+.rv{font-size:1.15rem;font-weight:600;display:flex;align-items:baseline;gap:8px}
 /* ---- cards ---- */
 .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
 .card{
@@ -182,28 +187,26 @@ footer a{color:var(--txt-2)}
   <p class="sec">Posición</p>
   <div class="hero">
     <div class="hero-l">
-      <div class="lbl">Resultado neto · después de comisiones</div>
+      <div class="lbl">Valor actual del fondo</div>
       <div class="pnl">
-        <span class="big mono" style="color:var(--pos)">+$29.38</span>
-        <span class="pill">+5.50%</span>
+        <span class="big mono">$563.38</span>
+        <span class="pill sm neg">−$0.61 · −0.11% <span style="opacity:.7;font-weight:500">24 h</span></span>
       </div>
-      <div class="hero-meta">
-        <span>Últimas 24 h</span>
-        <span class="pill sm neg">−$0.61 · −0.11%</span>
-        <span class="dot"></span>
-        <span>Bruta +$31.08 · las comisiones te costaron $1.70</span>
+      <div class="res">
+        <div><span class="rk">Invertido</span><span class="rv mono">$534.00</span></div>
+        <div><span class="rk">Resultado neto</span><span class="rv mono" style="color:var(--pos)">+$29.38 <span class="pill sm">+5.50%</span></span></div>
+        <div><span class="rk">Comisiones</span><span class="rv mono" style="color:var(--txt-2)">$1.70</span></div>
       </div>
       <div class="bar">
         <i style="background:var(--accent);width:94.8%"></i>
         <i style="background:var(--pos);width:5.2%"></i>
       </div>
       <div class="barleg">
-        <span><i class="sw" style="background:var(--accent)"></i>Invertido $534.00</span>
-        <span><i class="sw" style="background:var(--pos)"></i>Resultado +$29.38</span>
+        <span><i class="sw" style="background:var(--accent)"></i>Invertido</span>
+        <span><i class="sw" style="background:var(--pos)"></i>Ganancia (neta, bruta +$31.08)</span>
       </div>
     </div>
     <div class="hero-r">
-      <div class="kv"><span class="k">Valor actual</span><span class="v mono">$563.38</span></div>
       <div class="kv"><span class="k">BTC acumulado</span><span class="v mono btc">0.00744822</span></div>
       <div class="kv"><span class="k">Satoshis</span><span class="v mono">744,822</span></div>
       <div class="kv"><span class="k">Precio promedio</span><span class="v mono">$71,695</span></div>

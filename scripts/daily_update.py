@@ -243,6 +243,11 @@ body{
 .kv .v{font-size:1.05rem;font-weight:600;display:flex;align-items:baseline;gap:7px}
 .kv .v.btc{color:var(--btc)}
 
+.hero .big{font-size:3.6rem}
+.res{display:flex;gap:30px;margin-top:20px;flex-wrap:wrap}
+.res>div{display:flex;flex-direction:column;gap:4px}
+.rk{font-size:.72rem;color:var(--txt-3);text-transform:uppercase;letter-spacing:.06em;font-weight:600}
+.rv{font-size:1.15rem;font-weight:600;display:flex;align-items:baseline;gap:8px}
 /* ---- cards ---- */
 .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
 .card{
@@ -283,7 +288,7 @@ footer a{color:var(--txt-2)}
 @media(max-width:640px){
   body{padding:18px 14px 30px}
   .head h1{font-size:1.25rem}
-  .pnl .big{font-size:2.3rem}
+  .pnl .big,.hero .big{font-size:2.6rem}
   .card .val{font-size:1.25rem}
   .chart{height:280px}
   .panel{padding:16px 14px 10px}
@@ -691,28 +696,26 @@ def generate_dashboard(df):
   <p class="sec">Posición</p>
   <div class="hero">
     <div class="hero-l">
-      <div class="lbl">Resultado neto · después de comisiones</div>
+      <div class="lbl">Valor actual del fondo</div>
       <div class="pnl">
-        <span class="big mono" style="color:{color_pnl_barra}">{signed_money(ganancia_neta)}</span>
-        <span class="pill{cls_pnl}">{signed_pct(porcentaje_neto)}</span>
+        <span class="big mono">{money(valor_actual)}</span>
+        <span class="pill sm{cls_24h}">{signed_money(cambio_valor)} · {signed_pct(cambio_valor_pct)} <span style="opacity:.7;font-weight:500">24 h</span></span>
       </div>
-      <div class="hero-meta">
-        <span>Últimas 24 h</span>
-        <span class="pill sm{cls_24h}">{signed_money(cambio_valor)} · {signed_pct(cambio_valor_pct)}</span>
-        <span class="dot"></span>
-        <span>Bruta {signed_money(ganancia_bruta)} · las comisiones te costaron {money(costo_real_fees, 2)}</span>
+      <div class="res">
+        <div><span class="rk">Invertido</span><span class="rv mono">{money(total_invertido)}</span></div>
+        <div><span class="rk">Resultado neto</span><span class="rv mono" style="color:{color_pnl_barra}">{signed_money(ganancia_neta)} <span class="pill sm{cls_pnl}">{signed_pct(porcentaje_neto)}</span></span></div>
+        <div><span class="rk">Comisiones</span><span class="rv mono" style="color:var(--txt-2)">{money(costo_real_fees, 2)}</span></div>
       </div>
       <div class="bar">
         <i style="background:var(--accent);width:{pct_invertido_barra:.1f}%"></i>
         <i style="background:{color_pnl_barra};width:{pct_pnl_barra:.1f}%"></i>
       </div>
       <div class="barleg">
-        <span><i class="sw" style="background:var(--accent)"></i>Invertido {money(total_invertido)}</span>
-        <span><i class="sw" style="background:{color_pnl_barra}"></i>Resultado {signed_money(ganancia_neta)}</span>
+        <span><i class="sw" style="background:var(--accent)"></i>Invertido</span>
+        <span><i class="sw" style="background:{color_pnl_barra}"></i>Ganancia (neta, bruta {signed_money(ganancia_bruta)})</span>
       </div>
     </div>
     <div class="hero-r">
-      <div class="kv"><span class="k">Valor actual</span><span class="v mono">{money(valor_actual)}</span></div>
       <div class="kv"><span class="k">BTC acumulado</span><span class="v mono btc">{btc_total:.8f}</span></div>
       <div class="kv"><span class="k">Satoshis</span><span class="v mono">{satoshis:,}</span></div>
       <div class="kv"><span class="k">Precio promedio</span><span class="v mono">{money(precio_promedio, 0)}</span></div>
